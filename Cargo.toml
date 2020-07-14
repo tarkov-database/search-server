@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "search-index",
+    "search-rest",
+]
+
+[profile.release]
+lto = true
+opt-level = 3
+debug = false

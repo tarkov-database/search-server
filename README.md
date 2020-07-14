@@ -1,2 +1,3 @@
-# search-server
-Search backend of Tarkov Database
+# Search Server
+
+Highly experimental search backend of Tarkov Database
