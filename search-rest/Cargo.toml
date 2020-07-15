@@ -14,9 +14,7 @@ jemalloc = ["jemallocator"]
 search-index = { path = "../search-index" }
 jemallocator = { version = "0.3", optional = true }
 serde = { version = "1", features = ["derive"] }
-actix = "^0.10.0-alpha"
-actix-rt = "1"
-actix-web = { git = "https://github.com/actix/actix-web.git" }
+actix-web = "^3.0.0-beta"
 regex = "1"
 err-derive = "0.2"
 env_logger = "0.7"
