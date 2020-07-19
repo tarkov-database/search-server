@@ -18,5 +18,6 @@ actix-web = { git = "https://github.com/actix/actix-web.git", rev = "971ba3e" }
 actix = "^0.10.0-alpha"
 chrono = "0.4"
 regex = "1"
+log = "0.4"
 err-derive = "0.2"
 env_logger = "0.7"

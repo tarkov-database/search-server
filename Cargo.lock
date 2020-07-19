@@ -2059,6 +2059,7 @@ dependencies = [
  "env_logger",
  "err-derive",
  "jemallocator",
+ "log",
  "regex",
  "search-index",
  "serde",

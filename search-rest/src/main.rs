@@ -4,9 +4,10 @@ use std::{
     time::Duration,
 };
 
-use actix::{Actor, AsyncContext, Context};
+use actix::{fut::wrap_future, Actor, AsyncContext, Context};
 use actix_web::{dev::HttpResponseBuilder, http::StatusCode, web, App, HttpServer, Responder};
 use chrono::{DateTime, TimeZone, Utc};
+use log::{error, info};
 use search_index::{tarkov_database_rs::client::Client, ItemIndex};
 use serde::{Deserialize, Serialize};
 
@@ -34,12 +35,14 @@ impl IndexStateHandler {
         let client = self.client.clone();
         let item_index = self.item_index.clone();
 
-        ctx.spawn(actix::fut::wrap_future(async move {
+        ctx.spawn(wrap_future(async move {
+            info!("Check for index changes...");
+
             let mut c_client = client.lock().unwrap();
 
             if !c_client.token_is_valid() {
                 if let Err(e) = c_client.refresh_token().await {
-                    eprintln!(
+                    error!(
                         "Couldn't update indexes: error while refreshing API token: {}",
                         e
                     );
@@ -50,7 +53,7 @@ impl IndexStateHandler {
             let item_stats = match c_client.get_item_index().await {
                 Ok(i) => i,
                 Err(e) => {
-                    eprintln!(
+                    error!(
                         "Couldn't update indexes: error while getting item index: {}",
                         e
                     );
@@ -61,13 +64,16 @@ impl IndexStateHandler {
             let mut c_modified = item_index.modified.lock().unwrap();
 
             if c_modified.ge(&item_stats.modified) {
+                info!("Indexes are up to date, no update required");
                 return;
             }
+
+            info!("Indexes are out of date. Perform update...");
 
             let items = match c_client.get_all_items().await {
                 Ok(d) => d,
                 Err(e) => {
-                    eprintln!(
+                    error!(
                         "Couldn't update indexes: error while getting items from API: {}",
                         e
                     );
@@ -76,7 +82,7 @@ impl IndexStateHandler {
             };
 
             if let Err(e) = item_index.index.write_index(items) {
-                eprintln!(
+                error!(
                     "Couldn't update indexes: error while writing item index: {}",
                     e
                 );
@@ -84,6 +90,8 @@ impl IndexStateHandler {
             }
 
             *c_modified = item_stats.modified;
+
+            info!("Indexes updated successfully");
         }));
     }
 }
@@ -126,10 +134,13 @@ async fn item_query_handler(
             count: d.len(),
             data: d,
         }),
-        Err(e) => HttpResponseBuilder::new(StatusCode::INTERNAL_SERVER_ERROR).json(ErrorResponse {
-            error: &e.to_string(),
-            code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-        }),
+        Err(e) => {
+            error!("Query error: {}", e);
+            HttpResponseBuilder::new(StatusCode::INTERNAL_SERVER_ERROR).json(ErrorResponse {
+                error: &e.to_string(),
+                code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+            })
+        }
     }
 }
 
@@ -141,14 +152,14 @@ async fn main() -> io::Result<()> {
     let api_host = match env::var("API_HOST") {
         Ok(s) => s,
         Err(_) => {
-            eprintln!("Environment variable \"API_HOST\" is missing");
+            error!("Environment variable \"API_HOST\" is missing");
             process::exit(2);
         }
     };
     let api_token = match env::var("API_TOKEN") {
         Ok(s) => s,
         Err(_) => {
-            eprintln!("Environment variable \"API_TOKEN\" is missing");
+            error!("Environment variable \"API_TOKEN\" is missing");
             process::exit(2);
         }
     };
@@ -162,7 +173,7 @@ async fn main() -> io::Result<()> {
         index: match ItemIndex::new() {
             Ok(i) => i,
             Err(e) => {
-                eprintln!("Error while creating item index: {}", e);
+                error!("Error while creating item index: {}", e);
                 process::exit(2);
             }
         },
