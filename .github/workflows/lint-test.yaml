@@ -1,0 +1,51 @@
+name: Lint & Test
+
+on: [push]
+
+jobs:
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out
+      uses: actions/checkout@v2
+
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+          components: clippy, rustfmt
+          override: true
+
+    - name: Run Clippy
+      uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: --all-features
+
+    - name: Run Rustfmt
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out
+      uses: actions/checkout@v2
+
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+          override: true
+
+    - name: Run tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
