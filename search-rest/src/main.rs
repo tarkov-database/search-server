@@ -5,7 +5,7 @@ use std::{
 };
 
 use actix::{fut::wrap_future, Actor, AsyncContext, Context};
-use actix_web::{dev::HttpResponseBuilder, http::StatusCode, web, App, HttpServer, Responder};
+use actix_web::{http::StatusCode, web, App, HttpResponse, HttpServer, Responder};
 use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
 use search_index::{tarkov_database_rs::client::Client, ItemIndex};
@@ -114,32 +114,49 @@ struct Response<T> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ErrorResponse<'a> {
-    error: &'a str,
+struct StatusResponse<'a> {
+    message: &'a str,
     code: u16,
 }
 
 #[derive(Debug, Deserialize)]
 struct Query {
     term: String,
-    limit: usize,
+    limit: Option<usize>,
+    fuzzy: Option<bool>,
 }
 
 async fn item_query_handler(
     state: web::Data<Arc<IndexState<ItemIndex>>>,
     query: web::Query<Query>,
 ) -> impl Responder {
-    match state.index.query_top(&query.term, query.limit) {
-        Ok(d) => HttpResponseBuilder::new(StatusCode::OK).json(Response {
+    let term = &query.term;
+    let limit = query.limit.unwrap_or(30);
+    let fuzzy = query.fuzzy.unwrap_or(false);
+
+    match if fuzzy {
+        state.index.query_top_fuzzy(term, limit)
+    } else {
+        state.index.query_top(term, limit)
+    } {
+        Ok(d) => HttpResponse::Ok().json(Response {
             count: d.len(),
             data: d,
         }),
         Err(e) => {
-            error!("Query error: {}", e);
-            HttpResponseBuilder::new(StatusCode::INTERNAL_SERVER_ERROR).json(ErrorResponse {
-                error: &e.to_string(),
-                code: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-            })
+            error!("Query error for term \"{}\": {}", term, e);
+            match e {
+                search_index::Error::InvalidArgument(e) => {
+                    HttpResponse::BadRequest().json(StatusResponse {
+                        message: &e,
+                        code: StatusCode::BAD_REQUEST.into(),
+                    })
+                }
+                _ => HttpResponse::InternalServerError().json(StatusResponse {
+                    message: &e.to_string(),
+                    code: StatusCode::INTERNAL_SERVER_ERROR.into(),
+                }),
+            }
         }
     }
 }
@@ -152,14 +169,14 @@ async fn main() -> io::Result<()> {
     let api_host = match env::var("API_HOST") {
         Ok(s) => s,
         Err(_) => {
-            error!("Environment variable \"API_HOST\" is missing");
+            eprintln!("Environment variable \"API_HOST\" is missing");
             process::exit(2);
         }
     };
     let api_token = match env::var("API_TOKEN") {
         Ok(s) => s,
         Err(_) => {
-            error!("Environment variable \"API_TOKEN\" is missing");
+            eprintln!("Environment variable \"API_TOKEN\" is missing");
             process::exit(2);
         }
     };
