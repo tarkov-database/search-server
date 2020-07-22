@@ -94,6 +94,9 @@ impl ItemIndex {
         let mut writer = self.index.writer(WRITE_BUFFER)?;
         let schema = &self.schema;
 
+        // TODO: Make it more intelligent
+        writer.delete_all_documents()?;
+
         for item in data.into_iter() {
             let mut doc = Document::default();
             doc.add_text(schema.get_field("id").unwrap(), &item.id);
