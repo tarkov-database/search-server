@@ -1,1 +1,4 @@
 /target
+
+# Environment variable file
+.env
