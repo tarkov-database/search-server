@@ -12,7 +12,6 @@ use tantivy::{
 use tarkov_database_rs::model::item::Item;
 
 pub use tantivy::TantivyError as Error;
-pub use tarkov_database_rs;
 
 const WRITE_BUFFER: usize = 50_000_000;
 

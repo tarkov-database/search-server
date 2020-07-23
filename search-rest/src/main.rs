@@ -8,8 +8,9 @@ use actix::{fut::wrap_future, Actor, AsyncContext, Context};
 use actix_web::{http::StatusCode, web, App, HttpResponse, HttpServer, Responder};
 use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
-use search_index::{tarkov_database_rs::client::Client, ItemIndex};
+use search_index::ItemIndex;
 use serde::{Deserialize, Serialize};
+use tarkov_database_rs::client::Client;
 
 #[cfg(feature = "jemalloc")]
 #[global_allocator]
