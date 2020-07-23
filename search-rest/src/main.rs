@@ -10,7 +10,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
 use search_index::ItemIndex;
 use serde::{Deserialize, Serialize};
-use tarkov_database_rs::client::Client;
+use tarkov_database_rs::client::{Client, ClientBuilder};
 
 #[cfg(feature = "jemalloc")]
 #[global_allocator]
@@ -205,8 +205,31 @@ async fn main() -> io::Result<()> {
             .unwrap_or(UPDATE_INTERVAL),
     );
 
+    let client_builder = ClientBuilder::default()
+        .set_token(&api_token)
+        .set_host(&api_host);
+
+    let client_builder = if let Ok(ca) = env::var("API_CLIENT_CA") {
+        client_builder.set_ca(ca)
+    } else {
+        client_builder
+    };
+
+    let client_builder = if let Ok(key) = env::var("API_CLIENT_KEY") {
+        let cert = match env::var("API_CLIENT_CERT") {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Environment variable \"API_CLIENT_CERT\" is missing");
+                process::exit(2);
+            }
+        };
+        client_builder.set_keypair(cert, key)
+    } else {
+        client_builder
+    };
+
     IndexStateHandler::create(|_ctx| IndexStateHandler {
-        client: Arc::new(Mutex::new(Client::with_host(&api_token, &api_host))),
+        client: Arc::new(Mutex::new(client_builder.build().unwrap())),
         interval: update_interval,
         item_index: item_index.clone(),
     });

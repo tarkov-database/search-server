@@ -2457,14 +2457,16 @@ dependencies = [
 
 [[package]]
 name = "tarkov-database-rs"
-version = "0.1.0-alpha.1"
-source = "git+https://github.com/tarkov-database/tarkov-database-rs.git#0392a75d914a9b2e4b4386683cabe68785c88ec8"
+version = "0.1.0-alpha.2"
+source = "git+https://github.com/tarkov-database/tarkov-database-rs.git#12bc27c041361bb9d4c28be2c310b7f74d0243de"
 dependencies = [
  "awc",
  "chrono",
  "env_logger",
  "err-derive",
  "jsonwebtoken",
+ "openssl",
+ "rustls",
  "serde",
 ]
 
