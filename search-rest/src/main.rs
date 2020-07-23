@@ -163,7 +163,7 @@ async fn item_query_handler(
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    let port = env::var("PORT").unwrap_or(PORT.to_string());
+    let port = env::var("PORT").unwrap_or_else(|_| PORT.to_string());
     let bind = format!("127.0.0.1:{}", port);
 
     let api_host = match env::var("API_HOST") {
