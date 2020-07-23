@@ -1,0 +1,57 @@
+name: Build & Deploy
+on:
+  release:
+    types: [published]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: search-server
+    steps:
+
+      - name: Login to Registry
+        run: docker login docker.pkg.github.com -u ${GITHUB_ACTOR} -p ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out
+        uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build -t docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}:${GITHUB_REF#refs/tags/v} .
+
+      - name: Publish image
+        run: docker push docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}
+
+      - name: Logout
+        run: docker logout docker.pkg.github.com
+
+  # deploy:
+  #   name: Deploy
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   env:
+  #     DEPLOYMENT: search-server
+  #     CONTAINER: search-server
+  #     IMAGE_NAME: search-server
+  #   steps:
+
+  #     - name: Set up config
+  #       env:
+  #         KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+  #       run: |
+  #         mkdir -p ${HOME}/.kube
+  #         export KUBECONFIG=${HOME}/.kube/config
+  #         echo $KUBE_CONFIG | base64 -d > $KUBECONFIG
+
+  #     - name: Deploy image
+  #       run: kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}:${GITHUB_REF#refs/tags/v}
+
+  #     - name: Check rollout
+  #       if: success()
+  #       run: kubectl rollout status deployment/${DEPLOYMENT} -w --timeout=5m
+
+  #     - name: Roll back
+  #       if: failure()
+  #       run: kubectl rollout undo deployment/${DEPLOYMENT}
