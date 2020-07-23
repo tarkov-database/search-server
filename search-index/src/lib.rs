@@ -74,9 +74,7 @@ impl ItemIndex {
             .filter(Stemmer::new(Language::English));
         index.tokenizers().register("custom_en", en_stem);
 
-        let ngram = TextAnalyzer::from(NgramTokenizer::new(3, 4, false))
-            .filter(RemoveLongFilter::limit(40))
-            .filter(LowerCaser);
+        let ngram = TextAnalyzer::from(NgramTokenizer::new(3, 4, false)).filter(LowerCaser);
         index.tokenizers().register("ngram", ngram);
 
         Ok(Self {
