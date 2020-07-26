@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "search-index",
+    "search-state",
     "search-rest",
 ]
 

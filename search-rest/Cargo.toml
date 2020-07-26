@@ -9,19 +9,16 @@ edition = "2018"
 [features]
 default = ["jemalloc", "openssl"]
 
+openssl = ["search-state/openssl"]
 jemalloc = ["jemallocator"]
-openssl = ["actix-web/openssl", "tarkov-database-rs/openssl"]
-rustls = ["actix-web/rustls", "tarkov-database-rs/rustls"]
 
 [dependencies]
 search-index = { path = "../search-index" }
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.1.0-alpha.3" }
+search-state = { path = "../search-state" }
 jemallocator = { version = "0.3", optional = true }
 serde = { version = "1", features = ["derive"] }
 actix-web = { git = "https://github.com/actix/actix-web.git", rev = "971ba3e" }
 actix = "^0.10.0-alpha"
-chrono = "0.4"
-regex = "1"
 log = "0.4"
 err-derive = "0.2"
 env_logger = "0.7"

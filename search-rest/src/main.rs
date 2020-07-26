@@ -1,16 +1,11 @@
-use std::{
-    env, io, process,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{env, io, process, sync::Arc, time::Duration};
 
-use actix::{fut::wrap_future, Actor, AsyncContext, Context};
+use actix::Actor;
 use actix_web::{http::StatusCode, web, App, HttpResponse, HttpServer, Responder};
-use chrono::{DateTime, TimeZone, Utc};
-use log::{error, info};
+use log::error;
 use search_index::ItemIndex;
+use search_state::{ClientBuilder, IndexState, IndexStateHandler};
 use serde::{Deserialize, Serialize};
-use tarkov_database_rs::client::{Client, ClientBuilder};
 
 #[cfg(feature = "jemalloc")]
 #[global_allocator]
@@ -18,93 +13,9 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 const PORT: u16 = 8080;
 
+const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+
 const UPDATE_INTERVAL: u64 = 15 * 60;
-
-struct IndexStateHandler {
-    client: Arc<Mutex<Client>>,
-    interval: Duration,
-    item_index: Arc<IndexState<ItemIndex>>,
-}
-
-struct IndexState<T> {
-    index: T,
-    modified: Mutex<DateTime<Utc>>,
-}
-
-impl IndexStateHandler {
-    fn update_indexes(&mut self, ctx: &mut Context<Self>) {
-        let client = self.client.clone();
-        let item_index = self.item_index.clone();
-
-        ctx.spawn(wrap_future(async move {
-            info!("Check for index changes...");
-
-            let mut c_client = client.lock().unwrap();
-
-            if !c_client.token_is_valid() {
-                if let Err(e) = c_client.refresh_token().await {
-                    error!(
-                        "Couldn't update indexes: error while refreshing API token: {}",
-                        e
-                    );
-                    return;
-                }
-            }
-
-            let item_stats = match c_client.get_item_index().await {
-                Ok(i) => i,
-                Err(e) => {
-                    error!(
-                        "Couldn't update indexes: error while getting item index: {}",
-                        e
-                    );
-                    return;
-                }
-            };
-
-            let mut c_modified = item_index.modified.lock().unwrap();
-
-            if c_modified.ge(&item_stats.modified) {
-                info!("Indexes are up to date, no update required");
-                return;
-            }
-
-            info!("Indexes are out of date. Perform update...");
-
-            let items = match c_client.get_all_items().await {
-                Ok(d) => d,
-                Err(e) => {
-                    error!(
-                        "Couldn't update indexes: error while getting items from API: {}",
-                        e
-                    );
-                    return;
-                }
-            };
-
-            if let Err(e) = item_index.index.write_index(items) {
-                error!(
-                    "Couldn't update indexes: error while writing item index: {}",
-                    e
-                );
-                return;
-            }
-
-            *c_modified = item_stats.modified;
-
-            info!("Indexes updated successfully");
-        }));
-    }
-}
-
-impl Actor for IndexStateHandler {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Context<Self>) {
-        self.update_indexes(ctx);
-        ctx.run_interval(self.interval, Self::update_indexes);
-    }
-}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -167,71 +78,72 @@ async fn main() -> io::Result<()> {
     let port = env::var("PORT").unwrap_or_else(|_| PORT.to_string());
     let bind = format!("127.0.0.1:{}", port);
 
-    let api_host = match env::var("API_HOST") {
-        Ok(s) => s,
-        Err(_) => {
-            eprintln!("Environment variable \"API_HOST\" is missing");
-            process::exit(2);
-        }
-    };
-    let api_token = match env::var("API_TOKEN") {
-        Ok(s) => s,
-        Err(_) => {
-            eprintln!("Environment variable \"API_TOKEN\" is missing");
-            process::exit(2);
-        }
-    };
-
     if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "info");
     }
     env_logger::init();
 
-    let item_index = Arc::new(IndexState {
-        index: match ItemIndex::new() {
-            Ok(i) => i,
-            Err(e) => {
-                error!("Error while creating item index: {}", e);
-                process::exit(2);
-            }
-        },
-        modified: Mutex::new(Utc.timestamp(0, 0)),
-    });
+    let item_index = Arc::new(IndexState::new(match ItemIndex::new() {
+        Ok(i) => i,
+        Err(e) => {
+            error!("Error while creating item index: {}", e);
+            process::exit(2);
+        }
+    }));
 
-    let update_interval = Duration::from_secs(
-        env::var("UPDATE_INTERVAL")
-            .unwrap_or_default()
-            .parse()
-            .unwrap_or(UPDATE_INTERVAL),
-    );
-
-    let client_builder = ClientBuilder::default()
-        .set_token(&api_token)
-        .set_host(&api_host);
-
-    let client_builder = if let Ok(ca) = env::var("API_CLIENT_CA") {
-        client_builder.set_ca(ca)
-    } else {
-        client_builder
-    };
-
-    let client_builder = if let Ok(key) = env::var("API_CLIENT_KEY") {
-        let cert = match env::var("API_CLIENT_CERT") {
+    IndexStateHandler::create(|_ctx| {
+        let host = match env::var("API_HOST") {
             Ok(s) => s,
             Err(_) => {
-                eprintln!("Environment variable \"API_CLIENT_CERT\" is missing");
+                eprintln!("Environment variable \"API_HOST\" is missing");
                 process::exit(2);
             }
         };
-        client_builder.set_keypair(cert, key)
-    } else {
-        client_builder
-    };
+        let token = match env::var("API_TOKEN") {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Environment variable \"API_TOKEN\" is missing");
+                process::exit(2);
+            }
+        };
 
-    IndexStateHandler::create(|_ctx| IndexStateHandler {
-        client: Arc::new(Mutex::new(client_builder.build().unwrap())),
-        interval: update_interval,
-        item_index: item_index.clone(),
+        let client_builder = ClientBuilder::default()
+            .set_token(&token)
+            .set_host(&host)
+            .set_user_agent(USER_AGENT);
+
+        let client_builder = if let Ok(ca) = env::var("API_CLIENT_CA") {
+            client_builder.set_ca(ca)
+        } else {
+            client_builder
+        };
+
+        let client_builder = if let Ok(key) = env::var("API_CLIENT_KEY") {
+            let cert = match env::var("API_CLIENT_CERT") {
+                Ok(s) => s,
+                Err(_) => {
+                    eprintln!("Environment variable \"API_CLIENT_CERT\" is missing");
+                    process::exit(2);
+                }
+            };
+            client_builder.set_keypair(cert, key)
+        } else {
+            client_builder
+        };
+
+        let client = client_builder.build().unwrap();
+
+        let update_interval = Duration::from_secs(
+            env::var("UPDATE_INTERVAL")
+                .unwrap_or_default()
+                .parse()
+                .unwrap_or(UPDATE_INTERVAL),
+        );
+
+        let mut state = IndexStateHandler::new(client, update_interval);
+        state.set_item_index(item_index.clone());
+
+        state
     });
 
     let server = HttpServer::new(move || {

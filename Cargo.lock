@@ -276,10 +276,8 @@ dependencies = [
  "fxhash",
  "log",
  "mime",
- "openssl",
  "pin-project",
  "regex",
- "rustls",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -2144,14 +2142,23 @@ version = "0.1.0-alpha.3"
 dependencies = [
  "actix",
  "actix-web",
- "chrono",
  "env_logger",
  "err-derive",
  "jemallocator",
  "log",
- "regex",
  "search-index",
+ "search-state",
  "serde",
+]
+
+[[package]]
+name = "search-state"
+version = "0.1.0-alpha.0"
+dependencies = [
+ "actix",
+ "chrono",
+ "log",
+ "search-index",
  "tarkov-database-rs",
 ]
 
@@ -2457,17 +2464,17 @@ dependencies = [
 
 [[package]]
 name = "tarkov-database-rs"
-version = "0.1.0-alpha.3"
-source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.1.0-alpha.3#33a7be853f6f3ff0eba9f1cf6e437cae72c57438"
+version = "0.1.0-alpha.5"
+source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.1.0-alpha.5#486efd11b88fd0d82e11f19ff2b4de3f8d386b5f"
 dependencies = [
  "awc",
  "chrono",
  "env_logger",
- "err-derive",
  "jsonwebtoken",
  "openssl",
  "rustls",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
