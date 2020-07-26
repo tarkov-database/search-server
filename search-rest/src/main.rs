@@ -46,6 +46,22 @@ async fn item_query_handler(
     let limit = query.limit.unwrap_or(30);
     let fuzzy = query.fuzzy.unwrap_or(false);
 
+    match term.len() {
+        l if l < 3 => {
+            return HttpResponse::BadRequest().json(StatusResponse {
+                message: "Term is too short",
+                code: StatusCode::BAD_REQUEST.into(),
+            })
+        }
+        l if l > 100 => {
+            return HttpResponse::BadRequest().json(StatusResponse {
+                message: "Term is too long",
+                code: StatusCode::BAD_REQUEST.into(),
+            })
+        }
+        _ => {}
+    }
+
     match if fuzzy {
         state.index.query_top_fuzzy(term, limit)
     } else {
