@@ -5,7 +5,7 @@ use tantivy::{
     schema::{IndexRecordOption, Schema, SchemaBuilder, TextFieldIndexing, TextOptions},
     tokenizer::{
         Language, LowerCaser, NgramTokenizer, RemoveLongFilter, SimpleTokenizer, Stemmer,
-        TextAnalyzer,
+        StopWordFilter, TextAnalyzer,
     },
     Document, Index, IndexReader, ReloadPolicy, Term,
 };
@@ -14,6 +14,17 @@ use tarkov_database_rs::model::item::Item;
 pub use tantivy::TantivyError as Error;
 
 const WRITE_BUFFER: usize = 50_000_000;
+
+const STOP_WORDS_OEC: [&str; 100] = [
+    "the", "be", "to", "of", "and", "a", "in", "that", "have", "i", "it", "for", "not", "on",
+    "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say",
+    "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so",
+    "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like",
+    "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some",
+    "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over",
+    "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way",
+    "even", "new", "want", "because", "any", "these", "give", "day", "most", "us",
+];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -67,13 +78,18 @@ impl ItemIndex {
             .reload_policy(ReloadPolicy::OnCommit)
             .try_into()?;
 
+        let stop_words: Vec<String> = STOP_WORDS_OEC.iter().map(|s| s.to_string()).collect();
+
         let en_stem = TextAnalyzer::from(SimpleTokenizer)
             .filter(RemoveLongFilter::limit(40))
             .filter(LowerCaser)
+            .filter(StopWordFilter::remove(stop_words.clone()))
             .filter(Stemmer::new(Language::English));
         index.tokenizers().register("custom_en", en_stem);
 
-        let ngram = TextAnalyzer::from(NgramTokenizer::new(3, 4, false)).filter(LowerCaser);
+        let ngram = TextAnalyzer::from(NgramTokenizer::new(3, 4, false))
+            .filter(LowerCaser)
+            .filter(StopWordFilter::remove(stop_words));
         index.tokenizers().register("ngram", ngram);
 
         Ok(Self {
@@ -83,8 +99,8 @@ impl ItemIndex {
         })
     }
 
-    pub fn schema(&self) -> &Schema {
-        &self.schema
+    pub fn schema(self) -> Schema {
+        self.schema
     }
 
     pub fn write_index(&self, data: Vec<Item>) -> tantivy::Result<()> {
