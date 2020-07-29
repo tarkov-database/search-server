@@ -78,18 +78,19 @@ impl ItemIndex {
             .reload_policy(ReloadPolicy::OnCommit)
             .try_into()?;
 
-        let stop_words: Vec<String> = STOP_WORDS_OEC.iter().map(|s| s.to_string()).collect();
+        let stop_words = STOP_WORDS_OEC.iter().map(|s| s.to_string()).collect();
+        let word_filter = StopWordFilter::remove(stop_words);
 
         let en_stem = TextAnalyzer::from(SimpleTokenizer)
             .filter(RemoveLongFilter::limit(40))
             .filter(LowerCaser)
-            .filter(StopWordFilter::remove(stop_words.clone()))
+            .filter(word_filter.clone())
             .filter(Stemmer::new(Language::English));
         index.tokenizers().register("custom_en", en_stem);
 
         let ngram = TextAnalyzer::from(NgramTokenizer::new(3, 4, false))
             .filter(LowerCaser)
-            .filter(StopWordFilter::remove(stop_words));
+            .filter(word_filter);
         index.tokenizers().register("ngram", ngram);
 
         Ok(Self {
