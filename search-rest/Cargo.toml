@@ -1,6 +1,6 @@
 [package]
 name = "search-rest"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2018"
 
