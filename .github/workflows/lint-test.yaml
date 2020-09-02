@@ -6,8 +6,6 @@ on:
       - '**.rs'
       - '**/Cargo.lock'
       - '**/Cargo.toml'
-    tags-ignore:
-      - v*
     pull_request:
       types: [opened, edited, synchronize, reopened]
       paths:
