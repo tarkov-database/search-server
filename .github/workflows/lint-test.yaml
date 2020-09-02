@@ -6,6 +6,7 @@ on:
       - '**.rs'
       - '**/Cargo.lock'
       - '**/Cargo.toml'
+      - '.github/workflows/lint-test.yaml'
     pull_request:
       types: [opened, edited, synchronize, reopened]
       paths:
