@@ -2,8 +2,18 @@ name: Lint & Test
 
 on:
   push:
+    paths:
+      - '**.rs'
+      - '**/Cargo.lock'
+      - '**/Cargo.toml'
     tags-ignore:
       - v*
+    pull_request:
+      types: [opened, edited, synchronize, reopened]
+      paths:
+        - '**.rs'
+        - '**/Cargo.lock'
+        - '**/Cargo.toml'
 
 jobs:
 
