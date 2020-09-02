@@ -1,9 +1,5 @@
 [workspace]
-members = [
-    "search-index",
-    "search-state",
-    "search-rest",
-]
+members = ["search-index", "search-state", "search-rest"]
 
 [profile.release]
 lto = true
