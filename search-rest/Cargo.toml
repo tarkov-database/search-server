@@ -17,7 +17,7 @@ search-index = { path = "../search-index" }
 search-state = { path = "../search-state" }
 jemallocator = { version = "0.3", optional = true }
 serde = { version = "1", features = ["derive"] }
-actix-web = "3.0.0-beta.3"
+actix-web = "3.0.0-beta.4"
 actix = "0.10.0-alpha.3"
 log = "0.4"
 err-derive = "0.2"
