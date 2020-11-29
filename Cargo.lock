@@ -780,25 +780,12 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
-dependencies = [
- "atty",
- "humantime 1.3.0",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26ecb66b4bdca6c1409b40fb255eefc2bd4f6d135dab3c3124f80ffa2a9661e"
 dependencies = [
  "atty",
- "humantime 2.0.1",
+ "humantime",
  "log",
  "regex",
  "termcolor",
@@ -1172,15 +1159,6 @@ name = "httparse"
 version = "1.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd179ae861f0c2e53da70d892f5f3029f9594be0c41dc5269cd371691b1dc2f9"
-
-[[package]]
-name = "humantime"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df004cfca50ef23c36850aaaa59ad52cc70d0e90243c3c7737a4dd32dc7a3c4f"
-dependencies = [
- "quick-error",
-]
 
 [[package]]
 name = "humantime"
@@ -2079,7 +2057,7 @@ version = "0.1.0-alpha.2"
 dependencies = [
  "serde",
  "tantivy",
- "tarkov-database-rs 0.1.0-alpha.8",
+ "tarkov-database-rs",
 ]
 
 [[package]]
@@ -2088,7 +2066,7 @@ version = "0.1.0-alpha.7"
 dependencies = [
  "actix",
  "actix-web",
- "env_logger 0.8.2",
+ "env_logger",
  "err-derive",
  "jemallocator",
  "log",
@@ -2105,7 +2083,7 @@ dependencies = [
  "chrono",
  "log",
  "search-index",
- "tarkov-database-rs 0.1.0-alpha.7",
+ "tarkov-database-rs",
 ]
 
 [[package]]
@@ -2395,28 +2373,15 @@ dependencies = [
 
 [[package]]
 name = "tarkov-database-rs"
-version = "0.1.0-alpha.7"
-source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.1.0-alpha.7#5f95d5f49c95b556ef31e37fb35e2ca2a354569d"
-dependencies = [
- "awc",
- "chrono",
- "env_logger 0.7.1",
- "jsonwebtoken",
- "openssl",
- "rustls",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "tarkov-database-rs"
 version = "0.1.0-alpha.8"
 source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.1.0-alpha.8#d14a0d54a8748623cc5bbeb23aa089e6afec50b5"
 dependencies = [
  "awc",
  "chrono",
- "env_logger 0.8.2",
+ "env_logger",
  "jsonwebtoken",
+ "openssl",
+ "rustls",
  "serde",
  "thiserror",
 ]
