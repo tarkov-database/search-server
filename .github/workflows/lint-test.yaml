@@ -32,12 +32,17 @@ jobs:
           override: true
 
     - uses: actions/cache@v2
+      env:
+        cache-name: lint
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-lint
+        key: cargo-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          cargo-${{ env.cache-name }}
+          cargo-
 
     - name: Run Clippy
       uses: actions-rs/clippy-check@v1
@@ -66,12 +71,17 @@ jobs:
           override: true
 
     - uses: actions/cache@v2
+      env:
+        cache-name: test
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-test
+        key: cargo-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          cargo-${{ env.cache-name }}
+          cargo-
 
     - name: Run tests
       uses: actions-rs/cargo@v1
