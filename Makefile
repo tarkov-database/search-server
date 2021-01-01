@@ -6,7 +6,7 @@ rest-server:
 test:
 	cargo test
 
-run-debug:
+run:
 	cargo run
 
 run-release:
