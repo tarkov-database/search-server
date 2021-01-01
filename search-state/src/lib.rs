@@ -1,12 +1,10 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use actix::{fut::wrap_future, Actor, AsyncContext, Context};
 use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
 use search_index::ItemIndex;
+use tokio::sync::Mutex;
 
 pub use tarkov_database_rs::client::{Client, ClientBuilder};
 
@@ -44,7 +42,7 @@ impl IndexStateHandler {
         let item_index = self.item_index.clone();
 
         ctx.spawn(wrap_future(async move {
-            let mut c_client = client.lock().unwrap();
+            let mut c_client = client.lock().await;
 
             if !c_client.token_is_valid() {
                 if let Err(e) = c_client.refresh_token().await {
@@ -68,7 +66,7 @@ impl IndexStateHandler {
                     }
                 };
 
-                let mut c_modified = state.modified.lock().unwrap();
+                let mut c_modified = state.modified.lock().await;
 
                 if c_modified.lt(&stats.modified) {
                     info!("Item index are out of date. Perform update...");
