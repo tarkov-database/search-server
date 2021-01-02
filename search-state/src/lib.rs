@@ -71,7 +71,7 @@ impl IndexStateHandler {
                 if c_modified.lt(&stats.modified) {
                     info!("Item index are out of date. Perform update...");
 
-                    let items = match c_client.get_all_items().await {
+                    let items = match c_client.get_items_all().await {
                         Ok(d) => d,
                         Err(e) => {
                             error!(
