@@ -2318,8 +2318,8 @@ dependencies = [
 
 [[package]]
 name = "tarkov-database-rs"
-version = "0.1.0-alpha.8"
-source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.1.0-alpha.8#d14a0d54a8748623cc5bbeb23aa089e6afec50b5"
+version = "0.1.0-alpha.9"
+source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.1.0-alpha.9#bc667323fb14572e997bd5ed453a227300cd42ed"
 dependencies = [
  "awc",
  "chrono",
