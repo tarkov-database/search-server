@@ -14,6 +14,6 @@ rustls = ["tarkov-database-rs/rustls"]
 search-index = { path = "../search-index" }
 tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.1.0-alpha.8" }
 actix = "0.10"
-tokio = "0.2"
+tokio = "1.0"
 chrono = "0.4"
 log = "0.4"
