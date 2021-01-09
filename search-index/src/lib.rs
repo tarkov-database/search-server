@@ -1,17 +1,17 @@
+use std::{error, fmt, result};
+
 use serde::Serialize;
 use tantivy::{
     collector::TopDocs,
-    query::{FuzzyTermQuery, QueryParser},
+    query::{FuzzyTermQuery, QueryParser, QueryParserError},
     schema::{IndexRecordOption, Schema, SchemaBuilder, TextFieldIndexing, TextOptions},
     tokenizer::{
         Language, LowerCaser, NgramTokenizer, RemoveLongFilter, SimpleTokenizer, Stemmer,
         StopWordFilter, TextAnalyzer,
     },
-    Document, Index, IndexReader, ReloadPolicy, Term,
+    Document, Index, IndexReader, ReloadPolicy, TantivyError, Term,
 };
 use tarkov_database_rs::model::item::Item;
-
-pub use tantivy::TantivyError as Error;
 
 const WRITE_BUFFER: usize = 50_000_000;
 
@@ -25,6 +25,37 @@ const STOP_WORDS_OEC: [&str; 100] = [
     "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way",
     "even", "new", "want", "because", "any", "these", "give", "day", "most", "us",
 ];
+
+pub type Result<T> = result::Result<T, Error>;
+
+#[derive(Debug)]
+pub enum Error {
+    BadQuery(QueryParserError),
+    IndexError(TantivyError),
+}
+
+impl error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::BadQuery(e) => write!(f, "Query error: {}", e),
+            Error::IndexError(e) => write!(f, "Index error: {}", e),
+        }
+    }
+}
+
+impl From<TantivyError> for Error {
+    fn from(error: TantivyError) -> Self {
+        Self::IndexError(error)
+    }
+}
+
+impl From<QueryParserError> for Error {
+    fn from(error: QueryParserError) -> Self {
+        Self::BadQuery(error)
+    }
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,7 +74,7 @@ pub struct ItemIndex {
 }
 
 impl ItemIndex {
-    pub fn new() -> tantivy::Result<Self> {
+    pub fn new() -> Result<Self> {
         let mut builder = SchemaBuilder::default();
 
         let id = TextOptions::default().set_stored();
@@ -104,7 +135,7 @@ impl ItemIndex {
         self.schema
     }
 
-    pub fn write_index(&self, data: Vec<Item>) -> tantivy::Result<()> {
+    pub fn write_index(&self, data: Vec<Item>) -> Result<()> {
         let mut writer = self.index.writer(WRITE_BUFFER)?;
         let schema = &self.schema;
 
@@ -127,7 +158,7 @@ impl ItemIndex {
         Ok(())
     }
 
-    pub fn query_top(&self, term: &str, limit: usize) -> tantivy::Result<Vec<ItemDoc>> {
+    pub fn query_top(&self, term: &str, limit: usize) -> Result<Vec<ItemDoc>> {
         let id_field = self.schema.get_field("id").unwrap();
         let name_field = self.schema.get_field("name").unwrap();
         let desc_field = self.schema.get_field("description").unwrap();
@@ -175,7 +206,7 @@ impl ItemIndex {
         Ok(result)
     }
 
-    pub fn query_top_fuzzy(&self, term: &str, limit: usize) -> tantivy::Result<Vec<ItemDoc>> {
+    pub fn query_top_fuzzy(&self, term: &str, limit: usize) -> Result<Vec<ItemDoc>> {
         let id_field = self.schema.get_field("id").unwrap();
         let name_field = self.schema.get_field("name").unwrap();
         let desc_field = self.schema.get_field("description").unwrap();
