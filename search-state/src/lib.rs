@@ -6,7 +6,7 @@ use log::{error, info};
 use search_index::ItemIndex;
 use tokio::sync::Mutex;
 
-pub use tarkov_database_rs::client::{Client, ClientBuilder};
+use tarkov_database_rs::client::Client;
 
 pub struct IndexStateHandler {
     pub client: Arc<Mutex<Client>>,
