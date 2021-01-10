@@ -1,6 +1,9 @@
 use std::{env, io, process, time::Duration};
 
-use actix_web::{guard, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    dev::HttpResponseBuilder, guard, http::StatusCode, web, App, HttpRequest, HttpResponse,
+    HttpServer, Responder,
+};
 use client::ClientConfig;
 use futures_util::future::{ready, Ready};
 use serde::Serialize;
@@ -44,7 +47,10 @@ impl Responder for StatusResponse<'_> {
     type Future = Ready<Result<HttpResponse, actix_web::Error>>;
 
     fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-        ready(Ok(HttpResponse::Ok().json(self)))
+        ready(Ok(HttpResponseBuilder::new(
+            StatusCode::from_u16(self.code).unwrap(),
+        )
+        .json(self)))
     }
 }
 
