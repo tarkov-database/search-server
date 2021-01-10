@@ -6,7 +6,7 @@ use log::{error, info};
 use search_index::ItemIndex;
 use tokio::sync::Mutex;
 
-pub use tarkov_database_rs::client::{Client, ClientBuilder};
+use tarkov_database_rs::client::Client;
 
 pub struct IndexStateHandler {
     pub client: Arc<Mutex<Client>>,
@@ -71,7 +71,7 @@ impl IndexStateHandler {
                 if c_modified.lt(&stats.modified) {
                     info!("Item index are out of date. Perform update...");
 
-                    let items = match c_client.get_all_items().await {
+                    let items = match c_client.get_items_all().await {
                         Ok(d) => d,
                         Err(e) => {
                             error!(
