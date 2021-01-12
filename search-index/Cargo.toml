@@ -7,6 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tantivy = "0.13"
+tantivy = { git = "https://github.com/tantivy-search/tantivy.git", rev = "824ccc37ae4d62bdeaed18fe3d66a18bc70f1ae9" }
 serde = { version = "1", features = ["derive"] }
 tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.1.0-alpha.10" }

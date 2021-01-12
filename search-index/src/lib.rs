@@ -181,11 +181,11 @@ impl ItemIndex {
         let mut result: Vec<ItemDoc> = Vec::with_capacity(docs.len());
         for (_, addr) in docs.into_iter() {
             let doc = searcher.doc(addr)?;
-            let names = doc.get_all(name_field);
+            let mut names = doc.get_all(name_field);
             let item = ItemDoc {
                 id: doc.get_first(id_field).unwrap().text().unwrap().to_string(),
-                name: names[1].text().unwrap_or_default().to_string(),
-                short_name: names[0].text().unwrap_or_default().to_string(),
+                short_name: names.next().unwrap().text().unwrap_or_default().to_string(),
+                name: names.next().unwrap().text().unwrap_or_default().to_string(),
                 description: doc
                     .get_first(desc_field)
                     .unwrap()
@@ -227,11 +227,11 @@ impl ItemIndex {
         let mut result: Vec<ItemDoc> = Vec::with_capacity(docs.len());
         for (_, addr) in docs.into_iter() {
             let doc = searcher.doc(addr)?;
-            let names = doc.get_all(name_field);
+            let mut names = doc.get_all(name_field);
             let item = ItemDoc {
                 id: doc.get_first(id_field).unwrap().text().unwrap().to_string(),
-                name: names[1].text().unwrap_or_default().to_string(),
-                short_name: names[0].text().unwrap_or_default().to_string(),
+                short_name: names.next().unwrap().text().unwrap_or_default().to_string(),
+                name: names.next().unwrap().text().unwrap_or_default().to_string(),
                 description: doc
                     .get_first(desc_field)
                     .unwrap()
