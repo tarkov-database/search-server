@@ -1,8 +1,8 @@
 use std::{env, io, process, time::Duration};
 
 use actix_web::{
-    dev::HttpResponseBuilder, guard, http::StatusCode, web, App, HttpRequest, HttpResponse,
-    HttpServer, Responder,
+    dev::HttpResponseBuilder, error::InternalError, guard, http::StatusCode, web, App, HttpRequest,
+    HttpResponse, HttpServer, Responder, ResponseError,
 };
 use client::ClientConfig;
 use futures_util::future::{ready, Ready};
@@ -37,20 +37,38 @@ pub enum Error {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct StatusResponse<'a> {
-    message: &'a str,
+struct StatusResponse {
+    message: String,
     code: u16,
 }
 
-impl Responder for StatusResponse<'_> {
+impl Into<HttpResponse> for StatusResponse {
+    fn into(self) -> HttpResponse {
+        HttpResponseBuilder::new(StatusCode::from_u16(self.code).unwrap()).json(self)
+    }
+}
+
+impl Into<actix_web::Error> for StatusResponse {
+    fn into(self) -> actix_web::Error {
+        InternalError::from_response("", self.into()).into()
+    }
+}
+
+impl<T: ResponseError> From<T> for StatusResponse {
+    fn from(err: T) -> Self {
+        Self {
+            message: err.to_string(),
+            code: err.status_code().as_u16(),
+        }
+    }
+}
+
+impl Responder for StatusResponse {
     type Error = actix_web::Error;
     type Future = Ready<Result<HttpResponse, actix_web::Error>>;
 
     fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-        ready(Ok(HttpResponseBuilder::new(
-            StatusCode::from_u16(self.code).unwrap(),
-        )
-        .json(self)))
+        ready(Ok(self.into()))
     }
 }
 
@@ -99,6 +117,13 @@ async fn main() -> io::Result<()> {
         let client = Mutex::new(client.clone().build().unwrap());
 
         App::new()
+            .app_data(
+                web::QueryConfig::default()
+                    .error_handler(|err, _| StatusResponse::from(err).into()),
+            )
+            .app_data(
+                web::JsonConfig::default().error_handler(|err, _| StatusResponse::from(err).into()),
+            )
             .app_data(auth_config.clone())
             .service(
                 web::resource("/search")

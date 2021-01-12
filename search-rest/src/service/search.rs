@@ -7,9 +7,7 @@ use std::{
 };
 
 use actix::Actor;
-use actix_web::{
-    dev::HttpResponseBuilder, http::StatusCode, web, HttpResponse, Responder, ResponseError,
-};
+use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
 use search_index::ItemIndex;
 use search_state::{IndexState, IndexStateHandler};
@@ -40,10 +38,11 @@ impl ResponseError for SearchError {
     }
 
     fn error_response(&self) -> HttpResponse {
-        HttpResponseBuilder::new(self.status_code()).json(StatusResponse {
-            message: &format!("{}", self),
+        StatusResponse {
+            message: format!("{}", self),
             code: self.status_code().as_u16(),
-        })
+        }
+        .into()
     }
 }
 

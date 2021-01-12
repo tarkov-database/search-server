@@ -9,7 +9,7 @@ use std::{
 };
 
 use actix_web::{
-    dev::{self, HttpResponseBuilder, Service, ServiceRequest, ServiceResponse, Transform},
+    dev::{self, Service, ServiceRequest, ServiceResponse, Transform},
     error::ErrorInternalServerError,
     http::{header::AUTHORIZATION, HeaderMap, StatusCode},
     web, FromRequest, HttpRequest, HttpResponse, Responder, ResponseError,
@@ -78,10 +78,11 @@ impl ResponseError for AuthenticationError {
     }
 
     fn error_response(&self) -> HttpResponse {
-        HttpResponseBuilder::new(self.status_code()).json(StatusResponse {
-            message: &format!("{}", self),
+        StatusResponse {
+            message: format!("{}", self),
             code: self.status_code().as_u16(),
-        })
+        }
+        .into()
     }
 }
 
