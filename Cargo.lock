@@ -1702,6 +1702,7 @@ dependencies = [
  "serde",
  "tantivy",
  "tarkov-database-rs",
+ "thiserror",
 ]
 
 [[package]]

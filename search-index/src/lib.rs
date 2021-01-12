@@ -1,4 +1,4 @@
-use std::{error, fmt, result};
+use std::result;
 
 use serde::Serialize;
 use tantivy::{
@@ -12,6 +12,7 @@ use tantivy::{
     Document, Index, IndexReader, ReloadPolicy, TantivyError, Term,
 };
 use tarkov_database_rs::model::item::Item;
+use thiserror::Error;
 
 const WRITE_BUFFER: usize = 50_000_000;
 
@@ -28,33 +29,12 @@ const STOP_WORDS_OEC: [&str; 100] = [
 
 pub type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    BadQuery(QueryParserError),
-    IndexError(TantivyError),
-}
-
-impl error::Error for Error {}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::BadQuery(e) => write!(f, "Query error: {}", e),
-            Error::IndexError(e) => write!(f, "Index error: {}", e),
-        }
-    }
-}
-
-impl From<TantivyError> for Error {
-    fn from(error: TantivyError) -> Self {
-        Self::IndexError(error)
-    }
-}
-
-impl From<QueryParserError> for Error {
-    fn from(error: QueryParserError) -> Self {
-        Self::BadQuery(error)
-    }
+    #[error("Query error: {0}")]
+    BadQuery(#[from] QueryParserError),
+    #[error("Index error: {0}")]
+    IndexError(#[from] TantivyError),
 }
 
 #[derive(Debug, Serialize)]
