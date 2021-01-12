@@ -158,7 +158,7 @@ impl ItemIndex {
         Ok(())
     }
 
-    pub fn query_top(&self, term: &str, limit: usize) -> Result<Vec<ItemDoc>> {
+    pub fn query_top(&self, query: &str, limit: usize) -> Result<Vec<ItemDoc>> {
         let id_field = self.schema.get_field("id").unwrap();
         let name_field = self.schema.get_field("name").unwrap();
         let desc_field = self.schema.get_field("description").unwrap();
@@ -169,7 +169,7 @@ impl ItemIndex {
         let mut parser = QueryParser::for_index(&self.index, vec![name_field, desc_field]);
         parser.set_field_boost(name_field, 2.0);
 
-        let query = parser.parse_query(term)?;
+        let query = parser.parse_query(query)?;
 
         let searcher = self.reader.searcher();
         let docs = searcher.search(&query, &collector)?;
@@ -206,7 +206,7 @@ impl ItemIndex {
         Ok(result)
     }
 
-    pub fn query_top_fuzzy(&self, term: &str, limit: usize) -> Result<Vec<ItemDoc>> {
+    pub fn query_top_fuzzy(&self, query: &str, limit: usize) -> Result<Vec<ItemDoc>> {
         let id_field = self.schema.get_field("id").unwrap();
         let name_field = self.schema.get_field("name").unwrap();
         let desc_field = self.schema.get_field("description").unwrap();
@@ -214,7 +214,7 @@ impl ItemIndex {
 
         let collector = TopDocs::with_limit(limit);
 
-        let term = Term::from_field_text(name_field, term);
+        let term = Term::from_field_text(name_field, query);
         let query = FuzzyTermQuery::new(term, 1, true);
 
         let searcher = self.reader.searcher();

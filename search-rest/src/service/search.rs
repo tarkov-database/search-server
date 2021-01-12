@@ -64,8 +64,9 @@ impl<T: Serialize> Responder for Response<T> {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Query {
-    term: String,
+pub struct QueryParams {
+    #[serde(alias = "q")]
+    query: String,
     limit: Option<usize>,
     fuzzy: Option<bool>,
 }
@@ -91,29 +92,29 @@ impl Search {
 
     pub async fn get_handler(
         state: web::Data<Arc<IndexState<ItemIndex>>>,
-        query: web::Query<Query>,
+        opts: web::Query<QueryParams>,
     ) -> impl Responder {
-        let term = &query.term;
-        let limit = query.limit.unwrap_or(30);
-        let fuzzy = query.fuzzy.unwrap_or(false);
+        let query = &opts.query;
+        let limit = opts.limit.unwrap_or(30);
+        let fuzzy = opts.fuzzy.unwrap_or(false);
 
-        match term.len() {
+        match query.len() {
             l if l < 3 => return Err(SearchError::TermTooShort),
             l if l > 100 => return Err(SearchError::TermTooLong),
             _ => {}
         }
 
         match if fuzzy {
-            state.index.query_top_fuzzy(term, limit)
+            state.index.query_top_fuzzy(query, limit)
         } else {
-            state.index.query_top(term, limit)
+            state.index.query_top(query, limit)
         } {
             Ok(d) => Ok(Response {
                 count: d.len(),
                 data: d,
             }),
             Err(e) => {
-                error!("Query error for term \"{}\": {}", term, e);
+                error!("Error for query \"{}\": {}", query, e);
                 return Err(SearchError::IndexError(e));
             }
         }
