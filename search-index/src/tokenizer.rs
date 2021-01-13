@@ -85,10 +85,10 @@ impl NgramOptions {
         }
     }
 
-    // pub(crate) fn set_language(mut self, lang: Language) -> Self {
-    //     self.lang = lang;
-    //     self
-    // }
+    pub(crate) fn set_language(mut self, lang: Language) -> Self {
+        self.lang = lang;
+        self
+    }
 }
 
 impl Default for NgramOptions {

@@ -47,10 +47,10 @@ impl Index {
             .reload_policy(ReloadPolicy::OnCommit)
             .try_into()?;
 
-        let en_custom = Tokenizer::Custom(lang);
-        en_custom.register_for(&index);
+        let custom = Tokenizer::Custom(lang);
+        custom.register_for(&index);
 
-        let ngram = Tokenizer::Ngram(NgramOptions::default());
+        let ngram = Tokenizer::Ngram(NgramOptions::default().set_language(lang));
         ngram.register_for(&index);
 
         Ok(Self {
