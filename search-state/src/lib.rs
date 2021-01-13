@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use actix::{fut::wrap_future, Actor, AsyncContext, Context};
 use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
-use search_index::ItemIndex;
+use search_index::Index;
 use tokio::sync::Mutex;
 
 use tarkov_database_rs::client::Client;
@@ -11,7 +11,7 @@ use tarkov_database_rs::client::Client;
 pub struct IndexStateHandler {
     pub client: Arc<Mutex<Client>>,
     pub interval: Duration,
-    pub item_index: Option<Arc<IndexState<ItemIndex>>>,
+    pub item_index: Option<Arc<IndexState<Index>>>,
 }
 
 pub struct IndexState<T> {
@@ -96,7 +96,7 @@ impl IndexStateHandler {
         }));
     }
 
-    pub fn set_item_index(&mut self, index: Arc<IndexState<ItemIndex>>) {
+    pub fn set_item_index(&mut self, index: Arc<IndexState<Index>>) {
         self.item_index = Some(index);
     }
 }

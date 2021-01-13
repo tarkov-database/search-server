@@ -9,7 +9,7 @@ use std::{
 use actix::Actor;
 use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
-use search_index::ItemIndex;
+use search_index::Index;
 use search_state::{IndexState, IndexStateHandler};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -76,8 +76,8 @@ impl Search {
     pub fn new_state(
         client: Client,
         update_interval: Duration,
-    ) -> Result<Arc<IndexState<ItemIndex>>, SearchError> {
-        let item_index = Arc::new(IndexState::new(ItemIndex::new()?));
+    ) -> Result<Arc<IndexState<Index>>, SearchError> {
+        let item_index = Arc::new(IndexState::new(Index::new()?));
 
         IndexStateHandler::create(|_ctx| {
             let mut state = IndexStateHandler::new(client, update_interval);
@@ -90,7 +90,7 @@ impl Search {
     }
 
     pub async fn get_handler(
-        state: web::Data<Arc<IndexState<ItemIndex>>>,
+        state: web::Data<Arc<IndexState<Index>>>,
         opts: web::Query<QueryParams>,
     ) -> impl Responder {
         let query = &opts.query;
