@@ -1701,7 +1701,7 @@ dependencies = [
 
 [[package]]
 name = "search-rest"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 dependencies = [
  "actix",
  "actix-web",
@@ -1722,7 +1722,7 @@ dependencies = [
 
 [[package]]
 name = "search-state"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "actix",
  "chrono",
