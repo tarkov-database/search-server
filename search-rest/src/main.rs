@@ -127,7 +127,6 @@ async fn main() -> io::Result<()> {
             .app_data(auth_config.clone())
             .service(
                 web::resource("/search")
-                    .guard(guard::Header(CONTENT_TYPE, mime::APPLICATION_JSON.as_ref()))
                     .guard(guard::Get())
                     .data(state.clone())
                     .wrap(Authentication::with_scope(Scope::Search))
@@ -136,7 +135,6 @@ async fn main() -> io::Result<()> {
             .service(
                 web::scope("/token")
                     .app_data(client)
-                    .guard(guard::Header(CONTENT_TYPE, mime::APPLICATION_JSON.as_ref()))
                     .service(
                         web::resource("")
                             .guard(guard::Get())
@@ -145,6 +143,7 @@ async fn main() -> io::Result<()> {
                     .service(
                         web::resource("")
                             .guard(guard::Post())
+                            .guard(guard::Header(CONTENT_TYPE, mime::APPLICATION_JSON.as_ref()))
                             .wrap(Authentication::with_scope(Scope::Token))
                             .to(Authentication::post_handler),
                     ),
