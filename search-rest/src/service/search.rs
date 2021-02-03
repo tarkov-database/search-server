@@ -24,6 +24,8 @@ pub enum SearchError {
     TermTooShort,
     #[error("{0}")]
     IndexError(#[from] search_index::Error),
+    #[error("API error: {}", _0)]
+    APIError(#[from] tarkov_database_rs::Error),
 }
 
 impl ResponseError for SearchError {
@@ -34,6 +36,7 @@ impl ResponseError for SearchError {
                 search_index::Error::BadQuery(_) => StatusCode::BAD_REQUEST,
                 search_index::Error::IndexError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },
+            SearchError::APIError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -73,24 +76,29 @@ pub struct QueryParams {
 pub struct Search;
 
 impl Search {
-    pub fn new_state(
+    pub async fn new_state(
         client: Client,
         update_interval: Duration,
-    ) -> Result<Arc<IndexState<Index>>, SearchError> {
-        let item_index = Arc::new(IndexState::new(Index::new()?));
+    ) -> Result<Arc<IndexState>, SearchError> {
+        let mut client = client;
+
+        if !client.token_is_valid() {
+            client.refresh_token().await?;
+        }
+
+        let index = Arc::new(IndexState::new(Index::new()?));
+
+        index.update_items(client.get_items_all().await?)?;
 
         IndexStateHandler::create(|_ctx| {
-            let mut state = IndexStateHandler::new(client, update_interval);
-            state.set_item_index(item_index.clone());
-
-            state
+            IndexStateHandler::new(index.clone(), client, update_interval)
         });
 
-        Ok(item_index)
+        Ok(index)
     }
 
     pub async fn get_handler(
-        state: web::Data<Arc<IndexState<Index>>>,
+        state: web::Data<Arc<IndexState>>,
         opts: web::Query<QueryParams>,
     ) -> impl Responder {
         let query = &opts.query;

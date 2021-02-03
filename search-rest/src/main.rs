@@ -105,7 +105,7 @@ async fn main() -> io::Result<()> {
             .unwrap_or(UPDATE_INTERVAL),
     );
 
-    let state = match Search::new_state(client.clone().build().unwrap(), update_interval) {
+    let state = match Search::new_state(client.clone().build().unwrap(), update_interval).await {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Error while creating index: {}", e);
