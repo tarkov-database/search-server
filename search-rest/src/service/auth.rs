@@ -47,7 +47,7 @@ pub enum AuthenticationError {
     LockedUser,
     #[error("User doesn't exist")]
     UnknownUser,
-    #[error("API error: {0}")]
+    #[error("API error: {}", _0)]
     APIError(#[from] api::Error),
 }
 

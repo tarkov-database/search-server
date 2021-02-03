@@ -22,7 +22,7 @@ pub enum SearchError {
     TermTooLong,
     #[error("The given term is too short")]
     TermTooShort,
-    #[error("{0}")]
+    #[error("Index error: {}", _0)]
     IndexError(#[from] search_index::Error),
     #[error("API error: {}", _0)]
     APIError(#[from] tarkov_database_rs::Error),
