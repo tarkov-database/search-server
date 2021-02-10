@@ -1,10 +1,6 @@
 use crate::{client::Client, StatusResponse};
 
-use std::{
-    future::{ready, Ready},
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use actix::Actor;
 use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
@@ -57,11 +53,8 @@ struct Response<T> {
 }
 
 impl<T: Serialize> Responder for Response<T> {
-    type Error = actix_web::Error;
-    type Future = Ready<Result<HttpResponse, actix_web::Error>>;
-
-    fn respond_to(self, _req: &actix_web::HttpRequest) -> Self::Future {
-        ready(Ok(HttpResponse::Ok().json(self)))
+    fn respond_to(self, _req: &actix_web::HttpRequest) -> HttpResponse {
+        HttpResponse::Ok().json(web::Json(self))
     }
 }
 

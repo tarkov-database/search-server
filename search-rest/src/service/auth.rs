@@ -191,11 +191,8 @@ pub struct TokenResponse {
 }
 
 impl Responder for TokenResponse {
-    type Error = actix_web::Error;
-    type Future = Ready<Result<HttpResponse, actix_web::Error>>;
-
-    fn respond_to(self, _req: &actix_web::HttpRequest) -> Self::Future {
-        ready(Ok(HttpResponse::Created().json(self)))
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse {
+        HttpResponse::Created().json(web::Json(self))
     }
 }
 
@@ -339,12 +336,12 @@ where
     type Error = S::Error;
     type Future = LocalBoxFuture<'static, Result<ServiceResponse<B>, actix_web::Error>>;
 
-    fn poll_ready(&mut self, ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(ctx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
-        let mut service = self.service.clone();
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let service = self.service.clone();
 
         let scope = self.scope.clone();
 

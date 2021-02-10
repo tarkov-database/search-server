@@ -1,11 +1,10 @@
 use std::{env, io, process, time::Duration};
 
 use actix_web::{
-    dev::HttpResponseBuilder, error::InternalError, guard, http::StatusCode, web, App, HttpRequest,
-    HttpResponse, HttpServer, Responder, ResponseError,
+    dev::HttpResponseBuilder, error::InternalError, guard, http::StatusCode, web, App,
+    HttpResponse, HttpServer, ResponseError,
 };
 use client::ClientConfig;
-use futures_util::future::{ready, Ready};
 use serde::Serialize;
 use service::{
     auth::{Authentication, Config, Scope},
@@ -44,7 +43,7 @@ struct StatusResponse {
 
 impl Into<HttpResponse> for StatusResponse {
     fn into(self) -> HttpResponse {
-        HttpResponseBuilder::new(StatusCode::from_u16(self.code).unwrap()).json(self)
+        HttpResponseBuilder::new(StatusCode::from_u16(self.code).unwrap()).json(web::Json(self))
     }
 }
 
@@ -60,15 +59,6 @@ impl<T: ResponseError> From<T> for StatusResponse {
             message: err.to_string(),
             code: err.status_code().as_u16(),
         }
-    }
-}
-
-impl Responder for StatusResponse {
-    type Error = actix_web::Error;
-    type Future = Ready<Result<HttpResponse, actix_web::Error>>;
-
-    fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-        ready(Ok(self.into()))
     }
 }
 
