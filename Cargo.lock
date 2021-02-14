@@ -1532,7 +1532,7 @@ dependencies = [
 
 [[package]]
 name = "search-index"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "serde",
  "tantivy",
@@ -1542,7 +1542,7 @@ dependencies = [
 
 [[package]]
 name = "search-rest"
-version = "0.1.0-alpha.11"
+version = "0.1.0-alpha.12"
 dependencies = [
  "actix",
  "actix-web",
