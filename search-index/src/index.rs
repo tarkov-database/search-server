@@ -98,6 +98,23 @@ impl Index {
         Ok(())
     }
 
+    pub fn check_health(&self) -> Result<()> {
+        if let Err(err) = self.index.validate_checksum() {
+            return Err(crate::Error::UnhealthyIndex(format!(
+                "Checksum error: {}",
+                err
+            )));
+        }
+
+        if self.index.searchable_segments()?.is_empty() {
+            return Err(crate::Error::UnhealthyIndex(
+                "No searchable segments".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+
     pub fn query_top(&self, query: &str, limit: usize) -> Result<Vec<ItemDoc>> {
         let id_field = self.schema.get_field(IndexField::ID.name()).unwrap();
         let name_field = self.schema.get_field(IndexField::Name.name()).unwrap();

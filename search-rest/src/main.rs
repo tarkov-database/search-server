@@ -8,6 +8,7 @@ use client::ClientConfig;
 use serde::Serialize;
 use service::{
     auth::{Authentication, Config, Scope},
+    health::Health,
     search::{Search, UPDATE_INTERVAL},
 };
 use thiserror::Error;
@@ -137,6 +138,13 @@ async fn main() -> io::Result<()> {
                             .wrap(Authentication::with_scope(Scope::Token))
                             .to(Authentication::post_handler),
                     ),
+            )
+            .service(
+                web::resource("/health")
+                    .guard(guard::Get())
+                    .data(state.clone())
+                    .wrap(Authentication::new())
+                    .to(Health::get_handler),
             )
     });
 

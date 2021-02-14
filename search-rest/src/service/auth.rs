@@ -198,12 +198,16 @@ impl Responder for TokenResponse {
 
 #[derive(Debug, Clone, Default)]
 pub struct Authentication {
-    scope: Scope,
+    scope: Option<Scope>,
 }
 
 impl Authentication {
+    pub fn new() -> Self {
+        Self { scope: None }
+    }
+
     pub fn with_scope(scope: Scope) -> Self {
-        Self { scope }
+        Self { scope: Some(scope) }
     }
 
     pub async fn post_handler(
@@ -323,7 +327,7 @@ where
 }
 
 pub struct AuthenticationMiddlware<S> {
-    scope: Scope,
+    scope: Option<Scope>,
     service: Rc<RefCell<S>>,
 }
 
@@ -358,8 +362,10 @@ where
                 Err(e) => return Err(e.into()),
             };
 
-            if !claims.scope.contains(&scope) {
-                return Err(AuthenticationError::InsufficientPermission.into());
+            if let Some(scope) = scope {
+                if !claims.scope.contains(&scope) {
+                    return Err(AuthenticationError::InsufficientPermission.into());
+                }
             }
 
             service.call(req).await

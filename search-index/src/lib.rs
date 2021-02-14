@@ -18,4 +18,6 @@ pub enum Error {
     BadQuery(#[from] QueryParserError),
     #[error("Index error: {0}")]
     IndexError(#[from] TantivyError),
+    #[error("Index is in an unhealthy state: {0}")]
+    UnhealthyIndex(String),
 }

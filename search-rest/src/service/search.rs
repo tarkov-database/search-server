@@ -30,7 +30,9 @@ impl ResponseError for SearchError {
             Self::TermTooShort | Self::TermTooLong => StatusCode::BAD_REQUEST,
             Self::IndexError(e) => match e {
                 search_index::Error::BadQuery(_) => StatusCode::BAD_REQUEST,
-                search_index::Error::IndexError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                search_index::Error::IndexError(_) | search_index::Error::UnhealthyIndex(_) => {
+                    StatusCode::INTERNAL_SERVER_ERROR
+                }
             },
             SearchError::APIError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
