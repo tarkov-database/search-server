@@ -6,6 +6,7 @@ use std::{
     iter::FromIterator,
     rc::Rc,
     task::{Context, Poll},
+    time,
 };
 
 use actix_web::{
@@ -178,12 +179,17 @@ impl Default for Scope {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TokenRequest {
     sub: String,
     scope: Vec<Scope>,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    valid_for: Option<time::Duration>,
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TokenResponse {
     token: String,
     #[serde(with = "ts_seconds")]
@@ -225,7 +231,13 @@ impl Authentication {
 
         let audience = config.validation.aud.to_owned().unwrap();
 
-        let claims = Claims::new(Vec::from_iter(audience), &data.sub, data.scope.to_owned());
+        let mut claims = Claims::new(Vec::from_iter(audience), &data.sub, data.scope.to_owned());
+
+        if let Some(d) = data.valid_for {
+            if let Ok(d) = Duration::from_std(d) {
+                claims.set_expiration(claims.iat + d);
+            }
+        }
 
         let token = match encode(&Header::default(), &claims, &config.enc_key) {
             Ok(t) => t,

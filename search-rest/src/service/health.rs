@@ -56,7 +56,6 @@ struct Services {
 }
 
 #[derive(Debug, Clone)]
-#[repr(u8)]
 enum ServiceStatus {
     Ok,
     Warning,
