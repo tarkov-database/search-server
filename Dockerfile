@@ -13,6 +13,8 @@ LABEL homepage="https://tarkov-database.com"
 LABEL repository="https://github.com/tarkov-database/search-server"
 LABEL maintainer="Markus Wiegand <mail@morphy2k.dev>"
 
+LABEL org.opencontainers.image.source="https://github.com/tarkov-database/search-server"
+
 EXPOSE 8080
 
 COPY --from=builder /usr/local/cargo/bin/search-rest /usr/local/bin/search-rest

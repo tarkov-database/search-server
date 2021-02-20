@@ -8,24 +8,22 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: search-server
     steps:
 
       - name: Login to Registry
-        run: docker login docker.pkg.github.com -u ${GITHUB_ACTOR} -p ${{ secrets.GITHUB_TOKEN }}
+        run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u ${{ secrets.CR_USER }} --password-stdin
 
       - name: Check out
         uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build -t docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}:${GITHUB_REF#refs/tags/rest-v} .
+        run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF#refs/tags/v} .
 
       - name: Publish image
-        run: docker push --all-tags docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}
+        run: docker push --all-tags ghcr.io/${GITHUB_REPOSITORY}
 
       - name: Logout
-        run: docker logout docker.pkg.github.com
+        run: docker logout ghcr.io
 
   deploy:
     name: Deploy
@@ -34,7 +32,6 @@ jobs:
     env:
       DEPLOYMENT: search-server
       CONTAINER: search-server
-      IMAGE_NAME: search-server
     steps:
 
       - name: Set up config
@@ -46,7 +43,7 @@ jobs:
           echo $KUBE_CONFIG | base64 -d > $KUBECONFIG
 
       - name: Deploy image
-        run: kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=docker.pkg.github.com/${GITHUB_REPOSITORY}/${IMAGE_NAME}:${GITHUB_REF#refs/tags/rest-v}
+        run: kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF#refs/tags/rest-v}
 
       - name: Check rollout
         if: success()
