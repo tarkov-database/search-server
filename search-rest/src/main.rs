@@ -96,13 +96,14 @@ async fn main() -> io::Result<()> {
             .unwrap_or(UPDATE_INTERVAL),
     );
 
-    let state = match Search::new_state(client.clone().build().unwrap(), update_interval).await {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("Error while creating index: {}", e);
-            process::exit(2);
-        }
-    };
+    let (index, status) =
+        match Search::new_state(client.clone().build().unwrap(), update_interval).await {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Error while creating index: {}", e);
+                process::exit(2);
+            }
+        };
 
     let server = HttpServer::new(move || {
         let client = Mutex::new(client.clone().build().unwrap());
@@ -119,7 +120,7 @@ async fn main() -> io::Result<()> {
             .service(
                 web::resource("/search")
                     .guard(guard::Get())
-                    .data(state.clone())
+                    .data(index.clone())
                     .wrap(Authentication::with_scope(Scope::Search))
                     .to(Search::get_handler),
             )
@@ -142,7 +143,7 @@ async fn main() -> io::Result<()> {
             .service(
                 web::resource("/health")
                     .guard(guard::Get())
-                    .data(state.clone())
+                    .data(status.clone())
                     .wrap(Authentication::new())
                     .to(Health::get_handler),
             )

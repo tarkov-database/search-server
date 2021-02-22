@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
-
-use search_state::IndexState;
 use serde::Serialize;
-
 use thiserror::Error;
+use tokio::sync::RwLock;
+
+use search_state::HandlerStatus;
 
 #[derive(Error, Debug)]
 pub enum HealthError {
@@ -53,6 +53,7 @@ impl Responder for Response {
 #[serde(rename_all = "camelCase")]
 struct Services {
     index: ServiceStatus,
+    api: ServiceStatus,
 }
 
 #[derive(Debug, Clone)]
@@ -84,23 +85,28 @@ impl Serialize for ServiceStatus {
 pub struct Health;
 
 impl Health {
-    pub async fn get_handler(state: web::Data<Arc<IndexState>>) -> impl Responder {
+    pub async fn get_handler(status: web::Data<Arc<RwLock<HandlerStatus>>>) -> impl Responder {
         let mut ok = true;
 
-        let index_health = match state.index.check_health() {
-            Ok(_) => ServiceStatus::Ok,
-            Err(e) => {
-                error!("Error while checking index health state: {}", e);
-                ok = false;
-                ServiceStatus::Failure
-            }
+        let status = status.read().await;
+
+        let index = if status.is_index_error() {
+            ok = false;
+            ServiceStatus::Failure
+        } else {
+            ServiceStatus::Ok
+        };
+
+        let api = if status.is_client_error() {
+            ok = false;
+            ServiceStatus::Failure
+        } else {
+            ServiceStatus::Ok
         };
 
         Response {
             ok,
-            service: Services {
-                index: index_health,
-            },
+            service: Services { index, api },
         }
     }
 }

@@ -5,12 +5,14 @@ use std::{sync::Arc, time::Duration};
 use actix::Actor;
 use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
-use search_index::Index;
-use search_state::{IndexState, IndexStateHandler};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use tokio::sync::RwLock;
 
-pub const UPDATE_INTERVAL: u64 = 15 * 60;
+use search_index::Index;
+use search_state::{HandlerStatus, IndexState, IndexStateHandler};
+
+pub const UPDATE_INTERVAL: u64 = 5 * 60;
 
 #[derive(Error, Debug)]
 pub enum SearchError {
@@ -22,6 +24,8 @@ pub enum SearchError {
     IndexError(#[from] search_index::Error),
     #[error("API error: {}", _0)]
     APIError(#[from] tarkov_database_rs::Error),
+    #[error("State error: {}", _0)]
+    StateError(#[from] search_state::Error),
 }
 
 impl ResponseError for SearchError {
@@ -34,7 +38,9 @@ impl ResponseError for SearchError {
                     StatusCode::INTERNAL_SERVER_ERROR
                 }
             },
-            SearchError::APIError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            SearchError::APIError(_) | SearchError::StateError(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
 
@@ -74,7 +80,7 @@ impl Search {
     pub async fn new_state(
         client: Client,
         update_interval: Duration,
-    ) -> Result<Arc<IndexState>, SearchError> {
+    ) -> Result<(Arc<IndexState>, Arc<RwLock<HandlerStatus>>), SearchError> {
         let mut client = client;
 
         if !client.token_is_valid() {
@@ -82,14 +88,14 @@ impl Search {
         }
 
         let index = Arc::new(IndexState::new(Index::new()?));
-
         index.update_items(client.get_items_all().await?)?;
 
-        IndexStateHandler::create(|_ctx| {
-            IndexStateHandler::new(index.clone(), client, update_interval)
-        });
+        let handler = IndexStateHandler::new(index.clone(), client, update_interval);
+        let status = handler.status_ref();
 
-        Ok(index)
+        IndexStateHandler::create(|_ctx| handler);
+
+        Ok((index, status))
     }
 
     pub async fn get_handler(
