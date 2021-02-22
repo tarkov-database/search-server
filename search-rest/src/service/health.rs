@@ -6,7 +6,6 @@ use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
 use serde::Serialize;
 use thiserror::Error;
-use tokio::sync::RwLock;
 
 use search_state::HandlerStatus;
 
@@ -85,10 +84,8 @@ impl Serialize for ServiceStatus {
 pub struct Health;
 
 impl Health {
-    pub async fn get_handler(status: web::Data<Arc<RwLock<HandlerStatus>>>) -> impl Responder {
+    pub async fn get_handler(status: web::Data<Arc<HandlerStatus>>) -> impl Responder {
         let mut ok = true;
-
-        let status = status.read().await;
 
         let index = if status.is_index_error() {
             ok = false;

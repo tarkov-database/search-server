@@ -80,7 +80,7 @@ impl Search {
     pub async fn new_state(
         client: Client,
         update_interval: Duration,
-    ) -> Result<(Arc<IndexState>, Arc<RwLock<HandlerStatus>>), SearchError> {
+    ) -> Result<(Arc<IndexState>, Arc<HandlerStatus>), SearchError> {
         let mut client = client;
 
         if !client.token_is_valid() {

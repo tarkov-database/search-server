@@ -1,5 +1,8 @@
 use std::{
-    sync::{Arc, RwLock as SRwLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
     time::Duration,
 };
 
@@ -8,7 +11,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
 use tarkov_database_rs::{client::Client, model::item::Item};
 use thiserror::Error;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 
 use search_index::Index;
 
@@ -24,14 +27,14 @@ type Result<T> = std::result::Result<T, Error>;
 
 pub struct IndexState {
     pub index: Index,
-    modified: SRwLock<DateTime<Utc>>,
+    modified: RwLock<DateTime<Utc>>,
 }
 
 impl IndexState {
     pub fn new(index: Index) -> Self {
         Self {
             index,
-            modified: SRwLock::new(Utc.timestamp(0, 0)),
+            modified: RwLock::new(Utc.timestamp(0, 0)),
         }
     }
 
@@ -53,8 +56,8 @@ impl IndexState {
 pub struct IndexStateHandler {
     state: Arc<IndexState>,
     client: Arc<Mutex<Client>>,
+    status: Arc<HandlerStatus>,
     interval: Duration,
-    status: Arc<RwLock<HandlerStatus>>,
 }
 
 impl IndexStateHandler {
@@ -63,11 +66,11 @@ impl IndexStateHandler {
             state: index,
             client: Arc::new(Mutex::new(client)),
             interval,
-            status: Arc::new(RwLock::new(HandlerStatus::default())),
+            status: Arc::new(HandlerStatus::default()),
         }
     }
 
-    pub fn status_ref(&self) -> Arc<RwLock<HandlerStatus>> {
+    pub fn status_ref(&self) -> Arc<HandlerStatus> {
         self.status.clone()
     }
 
@@ -78,7 +81,6 @@ impl IndexStateHandler {
 
         ctx.spawn(wrap_future(async move {
             let mut client = client.lock().await;
-            let mut status = status.write().await;
 
             if !client.token_is_valid() {
                 if let Err(e) = client.refresh_token().await {
@@ -148,26 +150,26 @@ impl Actor for IndexStateHandler {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct HandlerStatus {
-    index_error: bool,
-    client_error: bool,
+    index_error: AtomicBool,
+    client_error: AtomicBool,
 }
 
 impl HandlerStatus {
-    pub fn set_index_error(&mut self, index_error: bool) {
-        self.index_error = index_error;
+    pub fn set_index_error(&self, val: bool) {
+        self.index_error.store(val, Ordering::SeqCst);
     }
 
-    pub fn set_client_error(&mut self, client_error: bool) {
-        self.client_error = client_error;
+    pub fn set_client_error(&self, val: bool) {
+        self.client_error.store(val, Ordering::SeqCst);
     }
 
     pub fn is_index_error(&self) -> bool {
-        self.index_error
+        self.index_error.load(Ordering::SeqCst)
     }
 
     pub fn is_client_error(&self) -> bool {
-        self.client_error
+        self.client_error.load(Ordering::SeqCst)
     }
 }
