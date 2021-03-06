@@ -20,6 +20,7 @@ serde = { version = "1", features = ["derive"] }
 humantime-serde = "1"
 actix-web = "4.0.0-beta.3"
 actix = "0.11.0-beta.2"
+actix-tls = "=3.0.0-beta.3"
 tokio = "1"
 futures-util = "0.3"
 thiserror = "1"
