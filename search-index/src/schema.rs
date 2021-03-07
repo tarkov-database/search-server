@@ -13,6 +13,7 @@ pub(crate) enum IndexField {
     Name,
     Description(Language),
     Kind,
+    Type,
 }
 
 impl IndexField {
@@ -22,6 +23,7 @@ impl IndexField {
             IndexField::Name => "name",
             IndexField::Description(_) => "description",
             IndexField::Kind => "kind",
+            IndexField::Type => "type",
         }
     }
 
@@ -49,6 +51,13 @@ impl IndexField {
                         .set_index_option(IndexRecordOption::Basic),
                 ),
             ),
+            IndexField::Type => Some(
+                TextOptions::default().set_stored().set_indexing_options(
+                    TextFieldIndexing::default()
+                        .set_tokenizer("default")
+                        .set_index_option(IndexRecordOption::Basic),
+                ),
+            ),
         }
     }
 }
@@ -68,7 +77,11 @@ impl Into<String> for IndexField {
 impl Into<FieldEntry> for IndexField {
     fn into(self) -> FieldEntry {
         match self {
-            IndexField::ID | IndexField::Name | IndexField::Description(_) | IndexField::Kind => {
+            IndexField::ID
+            | IndexField::Name
+            | IndexField::Description(_)
+            | IndexField::Kind
+            | IndexField::Type => {
                 let name = self.to_string();
                 let opts = match self.options() {
                     Some(o) => o,
@@ -97,6 +110,7 @@ impl IndexSchema {
         builder.add_field(IndexField::Name.into());
         builder.add_field(IndexField::Description(self.lang).into());
         builder.add_field(IndexField::Kind.into());
+        builder.add_field(IndexField::Type.into());
 
         builder.build()
     }

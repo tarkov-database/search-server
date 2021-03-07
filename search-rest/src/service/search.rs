@@ -7,9 +7,8 @@ use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio::sync::RwLock;
 
-use search_index::Index;
+use search_index::{DocType, Index, QueryOptions};
 use search_state::{HandlerStatus, IndexState, IndexStateHandler};
 
 pub const UPDATE_INTERVAL: u64 = 5 * 60;
@@ -33,7 +32,9 @@ impl ResponseError for SearchError {
         match self {
             Self::TermTooShort | Self::TermTooLong => StatusCode::BAD_REQUEST,
             Self::IndexError(e) => match e {
-                search_index::Error::BadQuery(_) => StatusCode::BAD_REQUEST,
+                search_index::Error::BadQuery(_) | search_index::Error::ParseError(_) => {
+                    StatusCode::BAD_REQUEST
+                }
                 search_index::Error::IndexError(_) | search_index::Error::UnhealthyIndex(_) => {
                     StatusCode::INTERNAL_SERVER_ERROR
                 }
@@ -57,7 +58,7 @@ impl ResponseError for SearchError {
 #[serde(rename_all = "camelCase")]
 struct Response<T> {
     count: usize,
-    data: T,
+    data: Vec<T>,
 }
 
 impl<T: Serialize> Responder for Response<T> {
@@ -70,8 +71,10 @@ impl<T: Serialize> Responder for Response<T> {
 pub struct QueryParams {
     #[serde(alias = "q")]
     query: String,
+    r#type: Option<DocType>,
+    kind: Option<String>,
     limit: Option<usize>,
-    fuzzy: Option<bool>,
+    conjunction: Option<bool>,
 }
 
 pub struct Search;
@@ -103,8 +106,13 @@ impl Search {
         opts: web::Query<QueryParams>,
     ) -> impl Responder {
         let query = &opts.query;
-        let limit = opts.limit.unwrap_or(30);
-        let fuzzy = opts.fuzzy.unwrap_or(false);
+        let r#type = opts.r#type.clone();
+        let kind = opts.kind.clone();
+
+        let options = QueryOptions {
+            limit: opts.limit.unwrap_or(30),
+            conjunction: opts.conjunction.unwrap_or(false),
+        };
 
         match query.len() {
             l if l < 3 => return Err(SearchError::TermTooShort),
@@ -112,10 +120,12 @@ impl Search {
             _ => {}
         }
 
-        match if fuzzy {
-            state.index.query_top_fuzzy(query, limit)
+        match if let Some(t) = r#type {
+            state
+                .index
+                .search_by_type(query, t, kind.as_deref(), options)
         } else {
-            state.index.query_top(query, limit)
+            state.index.query_top(query, options)
         } {
             Ok(d) => Ok(Response {
                 count: d.len(),
