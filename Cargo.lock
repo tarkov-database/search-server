@@ -1518,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "search-index"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 dependencies = [
  "serde",
  "tantivy",
@@ -1528,7 +1528,7 @@ dependencies = [
 
 [[package]]
 name = "search-rest"
-version = "0.1.0-alpha.13"
+version = "0.1.0-alpha.14"
 dependencies = [
  "actix",
  "actix-tls",

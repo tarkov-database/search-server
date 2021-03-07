@@ -1,6 +1,6 @@
 [package]
 name = "search-index"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2018"
 
