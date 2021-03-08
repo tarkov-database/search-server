@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "actix-tls"
-version = "3.0.0-beta.3"
+version = "3.0.0-beta.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322b22e9238d065f331af0585089de8c36978fcc56f888054add4e4365b9916b"
+checksum = "d2b1455e3f7a26d40cfc1080b571f41e8165e5a88e937ed579f7a4b3d55b0370"
 dependencies = [
  "actix-codec",
  "actix-rt",
@@ -1171,6 +1171,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "openssl-src"
+version = "111.14.0+1.1.1j"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "055b569b5bd7e5462a1700f595c7c7d487691d73b5ce064176af7f9f0cbb80a9"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "openssl-sys"
 version = "0.9.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1179,6 +1188,7 @@ dependencies = [
  "autocfg",
  "cc",
  "libc",
+ "openssl-src",
  "pkg-config",
  "vcpkg",
 ]
