@@ -1,4 +1,4 @@
-FROM rust:1.50.0 as builder
+FROM rust:1.51.0 as builder
 
 ENV PKG_CONFIG_ALLOW_CROSS=1
 ENV RUSTFLAGS="-Ctarget-cpu=x86-64 -Ctarget-feature=+sse,+sse2,+sse3,+sse4.1,+sse4.2,+avx,+avx2,+fma,+aes,+sha"
