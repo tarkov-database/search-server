@@ -10,10 +10,11 @@ use std::{
 };
 
 use actix_web::{
+    body::Body,
     dev::{self, Service, ServiceRequest, ServiceResponse, Transform},
     error::ErrorInternalServerError,
     http::{header::AUTHORIZATION, HeaderMap, StatusCode},
-    web, FromRequest, HttpRequest, HttpResponse, Responder, ResponseError,
+    web, BaseHttpResponse, FromRequest, HttpRequest, HttpResponse, Responder, ResponseError,
 };
 use api::{client::Client, model::user::User};
 use chrono::{serde::ts_seconds, DateTime, Duration, Utc};
@@ -78,7 +79,7 @@ impl ResponseError for AuthenticationError {
         }
     }
 
-    fn error_response(&self) -> HttpResponse {
+    fn error_response(&self) -> BaseHttpResponse<Body> {
         StatusResponse {
             message: format!("{}", self),
             code: self.status_code().as_u16(),

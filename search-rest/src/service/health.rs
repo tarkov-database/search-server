@@ -2,7 +2,9 @@ use crate::StatusResponse;
 
 use std::sync::Arc;
 
-use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
+use actix_web::{
+    body::Body, http::StatusCode, web, BaseHttpResponse, HttpResponse, Responder, ResponseError,
+};
 use log::error;
 use serde::Serialize;
 use thiserror::Error;
@@ -22,7 +24,7 @@ impl ResponseError for HealthError {
         StatusCode::INTERNAL_SERVER_ERROR
     }
 
-    fn error_response(&self) -> HttpResponse {
+    fn error_response(&self) -> BaseHttpResponse<Body> {
         StatusResponse {
             message: format!("{}", self),
             code: self.status_code().as_u16(),
