@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install toolchain
-      uses: actions-rs/toolchain@v1
+      uses: actions-rs/toolchain@v1.0.7
       with:
           toolchain: stable
           components: clippy, rustfmt
@@ -65,7 +65,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install toolchain
-      uses: actions-rs/toolchain@v1
+      uses: actions-rs/toolchain@v1.0.7
       with:
           toolchain: stable
           override: true
