@@ -14,7 +14,7 @@ jobs:
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Check out
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
 
       - name: Build image
         run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF#refs/tags/rest-v} .
