@@ -132,7 +132,7 @@ impl Search {
             }),
             Err(e) => {
                 error!("Error for query \"{}\": {}", query, e);
-                return Err(SearchError::IndexError(e));
+                Err(SearchError::IndexError(e))
             }
         }
     }

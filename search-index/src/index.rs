@@ -232,11 +232,11 @@ impl Index {
 
             item.name.push_str(names.next().unwrap().text().unwrap());
 
-            item.kind = if let Some(s) = doc.get_first(kind_field).unwrap().text() {
-                Some(s.to_string())
-            } else {
-                None
-            };
+            item.kind = doc
+                .get_first(kind_field)
+                .unwrap()
+                .text()
+                .map(|s| s.to_string());
 
             result.push(item);
         }
