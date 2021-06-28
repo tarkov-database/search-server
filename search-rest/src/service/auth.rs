@@ -11,7 +11,7 @@ use std::{
 
 use actix_web::{
     dev::{self, Service, ServiceRequest, ServiceResponse, Transform},
-    error::{ErrorInternalServerError, ErrorUnsupportedMediaType},
+    error::ErrorInternalServerError,
     http::{header, HeaderMap, StatusCode},
     web, FromRequest, HttpRequest, HttpResponse, Responder, ResponseError,
 };
@@ -222,13 +222,6 @@ impl Authentication {
     ) -> actix_web::Result<TokenResponse> {
         let config = req.app_data::<Config>().unwrap();
         let client = req.app_data::<Mutex<Client>>().unwrap();
-
-        if !match req.headers().get(header::CONTENT_TYPE) {
-            Some(v) => v.to_str().unwrap() == mime::APPLICATION_JSON,
-            None => false,
-        } {
-            return Err(ErrorUnsupportedMediaType(""));
-        }
 
         let user = Self::get_user(&data.sub, client).await?;
 
