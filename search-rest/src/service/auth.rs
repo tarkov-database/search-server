@@ -11,8 +11,8 @@ use std::{
 
 use actix_web::{
     dev::{self, Service, ServiceRequest, ServiceResponse, Transform},
-    error::ErrorInternalServerError,
-    http::{header::AUTHORIZATION, HeaderMap, StatusCode},
+    error::{ErrorInternalServerError, ErrorUnsupportedMediaType},
+    http::{header, HeaderMap, StatusCode},
     web, FromRequest, HttpRequest, HttpResponse, Responder, ResponseError,
 };
 use api::{client::Client, model::user::User};
@@ -223,6 +223,13 @@ impl Authentication {
         let config = req.app_data::<Config>().unwrap();
         let client = req.app_data::<Mutex<Client>>().unwrap();
 
+        if !match req.headers().get(header::CONTENT_TYPE) {
+            Some(v) => v.to_str().unwrap() == mime::APPLICATION_JSON,
+            None => false,
+        } {
+            return Err(ErrorUnsupportedMediaType(""));
+        }
+
         let user = Self::get_user(&data.sub, client).await?;
 
         if user.locked {
@@ -397,7 +404,7 @@ impl Bearer {
     }
 
     fn from_headers(headers: &HeaderMap) -> Result<Self, AuthenticationError> {
-        let value = match headers.get(AUTHORIZATION) {
+        let value = match headers.get(header::AUTHORIZATION) {
             Some(h) => h.to_str().unwrap(),
             None => return Err(AuthenticationError::MissingHeader),
         };

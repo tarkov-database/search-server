@@ -21,8 +21,6 @@ mod service;
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-const CONTENT_TYPE: &str = "Content-Type";
-
 const PORT: u16 = 8080;
 
 #[derive(Debug, Error)]
@@ -136,7 +134,6 @@ async fn main() -> io::Result<()> {
                     .service(
                         web::resource("")
                             .guard(guard::Post())
-                            .guard(guard::Header(CONTENT_TYPE, mime::APPLICATION_JSON.as_ref()))
                             .wrap(Authentication::with_scope(Scope::Token))
                             .to(Authentication::post_handler),
                     ),
