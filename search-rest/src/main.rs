@@ -119,14 +119,15 @@ async fn main() -> io::Result<()> {
             .app_data(auth_config.clone())
             .service(
                 web::resource("/search")
-                    .guard(guard::Get())
-                    .data(index.clone())
+                    .app_data(index.clone())
                     .wrap(Authentication::with_scope(Scope::Search))
-                    .to(Search::get_handler),
+                    .default_service(web::route().to(HttpResponse::MethodNotAllowed))
+                    .route(web::get().to(Search::get_handler)),
             )
             .service(
                 web::scope("/token")
                     .app_data(client)
+                    .default_service(web::route().to(HttpResponse::MethodNotAllowed))
                     .service(
                         web::resource("")
                             .guard(guard::Get())
@@ -142,10 +143,10 @@ async fn main() -> io::Result<()> {
             )
             .service(
                 web::resource("/health")
-                    .guard(guard::Get())
-                    .data(status.clone())
+                    .app_data(status.clone())
                     .wrap(Authentication::new())
-                    .to(Health::get_handler),
+                    .default_service(web::route().to(HttpResponse::MethodNotAllowed))
+                    .route(web::get().to(Health::get_handler)),
             )
     });
 

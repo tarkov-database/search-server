@@ -2,7 +2,7 @@ use crate::StatusResponse;
 
 use std::sync::Arc;
 
-use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder, ResponseError};
 use log::error;
 use serde::Serialize;
 use thiserror::Error;
@@ -84,7 +84,9 @@ impl Serialize for ServiceStatus {
 pub struct Health;
 
 impl Health {
-    pub async fn get_handler(status: web::Data<Arc<HandlerStatus>>) -> impl Responder {
+    pub async fn get_handler(req: HttpRequest) -> impl Responder {
+        let status = req.app_data::<Arc<HandlerStatus>>().unwrap();
+
         let mut ok = true;
 
         let index = if status.is_index_error() {

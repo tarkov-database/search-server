@@ -3,7 +3,7 @@ use crate::{client::Client, StatusResponse};
 use std::{sync::Arc, time::Duration};
 
 use actix::Actor;
-use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder, ResponseError};
 use log::error;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -101,10 +101,9 @@ impl Search {
         Ok((index, status))
     }
 
-    pub async fn get_handler(
-        state: web::Data<Arc<IndexState>>,
-        opts: web::Query<QueryParams>,
-    ) -> impl Responder {
+    pub async fn get_handler(req: HttpRequest, opts: web::Query<QueryParams>) -> impl Responder {
+        let state = req.app_data::<Arc<IndexState>>().unwrap();
+
         let query = &opts.query;
         let r#type = opts.r#type.clone();
         let kind = opts.kind.clone();
