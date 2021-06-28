@@ -13,14 +13,14 @@ openssl = ["search-state/openssl"]
 jemalloc = ["jemallocator"]
 
 [dependencies]
-search-index = { path = "../search-index" }
-search-state = { path = "../search-state" }
-jemallocator = { version = "0.3", optional = true }
-serde = { version = "1", features = ["derive"] }
+search-index = { path="../search-index" }
+search-state = { path="../search-state" }
+jemallocator = { version="0.3", optional=true }
+serde = { version="1", features=["derive"] }
 serde_json = "1"
 humantime-serde = "1"
-actix-web = "4.0.0-beta.6"
-actix = "0.11"
+actix-web = "4.0.0-beta.8"
+actix = "0.12"
 tokio = "1"
 futures-util = "0.3"
 thiserror = "1"
@@ -28,5 +28,5 @@ log = "0.4"
 env_logger = "0.8"
 chrono = "0.4"
 mime = "0.3"
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.1.0-alpha.12" }
+tarkov-database-rs = { git="https://github.com/tarkov-database/tarkov-database-rs.git", tag="v0.1.0-alpha.13" }
 jsonwebtoken = "7"

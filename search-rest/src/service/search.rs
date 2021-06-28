@@ -3,9 +3,7 @@ use crate::{client::Client, StatusResponse};
 use std::{sync::Arc, time::Duration};
 
 use actix::Actor;
-use actix_web::{
-    body::Body, http::StatusCode, web, BaseHttpResponse, HttpResponse, Responder, ResponseError,
-};
+use actix_web::{http::StatusCode, web, HttpResponse, Responder, ResponseError};
 use log::error;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -47,7 +45,7 @@ impl ResponseError for SearchError {
         }
     }
 
-    fn error_response(&self) -> BaseHttpResponse<Body> {
+    fn error_response(&self) -> HttpResponse {
         StatusResponse {
             message: format!("{}", self),
             code: self.status_code().as_u16(),

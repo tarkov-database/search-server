@@ -1,11 +1,8 @@
 use std::{env, io, process, time::Duration};
 
 use actix_web::{
-    body::Body,
-    error::InternalError,
-    guard,
-    http::{HeaderName, HeaderValue, StatusCode},
-    web, App, BaseHttpResponse, HttpServer, ResponseError,
+    error::InternalError, guard, http::StatusCode, web, App, HttpResponse, HttpResponseBuilder,
+    HttpServer, ResponseError,
 };
 use client::ClientConfig;
 use serde::Serialize;
@@ -45,16 +42,9 @@ struct StatusResponse {
     code: u16,
 }
 
-impl Into<BaseHttpResponse<Body>> for StatusResponse {
-    fn into(self) -> BaseHttpResponse<Body> {
-        let mut resp = BaseHttpResponse::new(StatusCode::from_u16(self.code).unwrap())
-            .set_body(Body::from_slice(&serde_json::to_vec(&self).unwrap()));
-        resp.headers_mut().insert(
-            HeaderName::from_static(CONTENT_TYPE),
-            HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()),
-        );
-
-        resp
+impl Into<HttpResponse> for StatusResponse {
+    fn into(self) -> HttpResponse {
+        HttpResponseBuilder::new(StatusCode::from_u16(self.code).unwrap()).json(web::Json(self))
     }
 }
 

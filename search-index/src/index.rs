@@ -155,6 +155,7 @@ impl Index {
         Ok(())
     }
 
+    // Replace with query builder?
     pub fn search_by_type(
         &self,
         query: &str,
