@@ -1442,7 +1442,6 @@ dependencies = [
  "hyper",
  "jemallocator",
  "jsonwebtoken",
- "mime",
  "search-index",
  "search-state",
  "serde",
