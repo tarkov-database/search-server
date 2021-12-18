@@ -7,7 +7,7 @@ WORKDIR /usr/src/search-server
 COPY . .
 RUN cargo install --path search-rest
 
-FROM gcr.io/distroless/cc-debian10
+FROM gcr.io/distroless/cc-debian11
 
 LABEL homepage="https://tarkov-database.com"
 LABEL repository="https://github.com/tarkov-database/search-server"
