@@ -144,6 +144,7 @@ async fn main() -> Result<()> {
         .load_shed()
         .concurrency_limit(1024)
         .timeout(Duration::from_secs(60))
+        .layer(SetSensitiveHeadersLayer::new(once(AUTHORIZATION)))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().include_headers(true))
@@ -156,8 +157,7 @@ async fn main() -> Result<()> {
         .layer(AddExtensionLayer::new(token_config))
         .layer(AddExtensionLayer::new(api_client))
         .layer(AddExtensionLayer::new(index))
-        .layer(AddExtensionLayer::new(status))
-        .layer(SetSensitiveHeadersLayer::new(once(AUTHORIZATION)));
+        .layer(AddExtensionLayer::new(status));
 
     let svc_routes = Router::new()
         .nest("/search", search::routes())
