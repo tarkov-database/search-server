@@ -60,6 +60,7 @@ impl From<JwtError> for TokenError {
         match *error.kind() {
             ErrorKind::ExpiredSignature => Self::Expired,
             ErrorKind::ImmatureSignature => Self::Immature,
+            ErrorKind::InvalidToken => Self::Invalid,
             _ => {
                 error!("{:?}", error);
                 Self::Invalid

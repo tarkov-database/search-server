@@ -1,31 +1,12 @@
 mod handler;
 mod routes;
 
-use crate::{authentication::TokenClaims, error, model::Status};
+use crate::authentication::TokenClaims;
 
 use chrono::{serde::ts_seconds, DateTime, Duration, Utc};
-use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 
 pub use routes::routes;
-
-#[derive(Debug, thiserror::Error)]
-pub enum TokenError {
-    #[error("token encoding failed")]
-    Encoding,
-}
-
-impl error::ErrorResponse for TokenError {
-    type Response = Status;
-
-    fn status_code(&self) -> StatusCode {
-        StatusCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn error_response(&self) -> Self::Response {
-        Status::new(self.status_code(), self.to_string())
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
