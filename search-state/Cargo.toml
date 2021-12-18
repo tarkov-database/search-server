@@ -1,21 +1,23 @@
 [package]
 name = "search-state"
-version = "0.1.0-alpha.7"
+version = "0.2.0-alpha.0"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
 rust-version = "1.57"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-openssl = ["tarkov-database-rs/openssl"]
-rustls = ["tarkov-database-rs/rustls"]
-
 [dependencies]
 search-index = { path = "../search-index" }
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.1.0-alpha.13" }
-actix = "0.12"
-tokio = "1"
+
+tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.2" }
+
+tokio = { version = "1", features = [
+    "sync",
+    "macros",
+    "time",
+], default-features = false }
 chrono = "0.4"
-log = "0.4"
 thiserror = "1"
+tracing = "0.1"
+tracing-futures = { version = "0.2", features = ["futures-03"] }

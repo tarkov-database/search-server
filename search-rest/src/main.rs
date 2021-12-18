@@ -1,151 +1,201 @@
-use std::{env, io, process, time::Duration};
+mod authentication;
+mod error;
+mod extract;
+mod health;
+mod model;
+mod search;
+mod token;
 
-use actix_web::{
-    error::InternalError, guard, http::StatusCode, web, App, HttpResponse, HttpResponseBuilder,
-    HttpServer, ResponseError,
-};
-use client::ClientConfig;
-use serde::Serialize;
-use service::{
-    auth::{Authentication, Config, Scope},
-    health::Health,
-    search::{Search, UPDATE_INTERVAL},
-};
-use thiserror::Error;
-use tokio::sync::Mutex;
+use crate::authentication::TokenConfig;
 
-mod client;
-mod service;
+use std::{
+    env,
+    iter::once,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    time::Duration,
+};
+
+use axum::{error_handling::HandleErrorLayer, Router, Server};
+use hyper::header::AUTHORIZATION;
+use search_index::Index;
+use search_state::{IndexState, IndexStateHandler};
+use serde::Deserialize;
+use tarkov_database_rs::client::ClientBuilder;
+use tokio::{
+    signal::unix::{signal, SignalKind},
+    sync::broadcast::{self, Sender},
+};
+use tower::ServiceBuilder;
+use tower_http::{
+    add_extension::AddExtensionLayer,
+    sensitive_headers::SetSensitiveHeadersLayer,
+    trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
+    LatencyUnit,
+};
 
 #[cfg(feature = "jemalloc")]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-const PORT: u16 = 8080;
+const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Missing environment variable: {0}")]
-    MissingEnvVar(String),
-    #[error("API lib error: {0}")]
-    APILibrary(#[from] tarkov_database_rs::Error),
-    #[error("IO error: {0}")]
-    IOError(#[from] io::Error),
+pub type Result<T> = std::result::Result<T, error::Error>;
+
+const fn default_addr() -> IpAddr {
+    IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct StatusResponse {
-    message: String,
-    code: u16,
+const fn default_port() -> u16 {
+    8080
 }
 
-impl Into<HttpResponse> for StatusResponse {
-    fn into(self) -> HttpResponse {
-        HttpResponseBuilder::new(StatusCode::from_u16(self.code).unwrap()).json(web::Json(self))
-    }
+const fn default_interval() -> Duration {
+    Duration::from_secs(10 * 60)
 }
 
-impl Into<actix_web::Error> for StatusResponse {
-    fn into(self) -> actix_web::Error {
-        InternalError::from_response("", self.into()).into()
-    }
+#[derive(Debug, Deserialize)]
+struct AppConfig {
+    // HTTP server
+    #[serde(default = "default_addr")]
+    server_addr: IpAddr,
+    #[serde(default = "default_port")]
+    server_port: u16,
+
+    // JWT
+    jwt_secret: String,
+    jwt_audience: Vec<String>,
+
+    // API
+    api_origin: String,
+    api_token: String,
+    api_client_ca: Option<PathBuf>,
+    api_client_cert: Option<PathBuf>,
+    api_client_key: Option<PathBuf>,
+
+    // Search
+    #[serde(default = "default_interval", with = "humantime_serde")]
+    update_interval: Duration,
 }
 
-impl<T: ResponseError> From<T> for StatusResponse {
-    fn from(err: T) -> Self {
-        Self {
-            message: err.to_string(),
-            code: err.status_code().as_u16(),
-        }
-    }
-}
-
-#[actix_web::main]
-async fn main() -> io::Result<()> {
-    let port = env::var("PORT").unwrap_or_else(|_| PORT.to_string());
-    let bind = format!("127.0.0.1:{}", port);
-
+#[tokio::main]
+async fn main() -> Result<()> {
     if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "info");
     }
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
-    let auth_config = match Config::from_env() {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Error while creating auth config: {}", e);
-            process::exit(2);
-        }
+    let prefix = envy::prefixed("SEARCH_");
+
+    let app_config: AppConfig = if dotenv::dotenv().is_ok() {
+        prefix.from_iter(dotenv::vars())?
+    } else {
+        prefix.from_env()?
     };
 
-    let client = match ClientConfig::from_env() {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Error while creating client config: {}", e);
-            process::exit(2);
-        }
+    let token_config =
+        TokenConfig::from_secret(app_config.jwt_secret.as_bytes(), app_config.jwt_audience);
+
+    let client_builder = ClientBuilder::default()
+        .set_origin(&app_config.api_origin)
+        .set_token(&app_config.api_token)
+        .set_user_agent(USER_AGENT);
+
+    let client_builder = if let Some(v) = app_config.api_client_ca {
+        client_builder.set_ca(v)
+    } else {
+        client_builder
     };
 
-    let update_interval = Duration::from_secs(
-        env::var("UPDATE_INTERVAL")
-            .unwrap_or_default()
-            .parse()
-            .unwrap_or(UPDATE_INTERVAL),
+    let client_builder = if let Some(cert) = app_config.api_client_cert {
+        if let Some(key) = app_config.api_client_key {
+            client_builder.set_keypair(cert, key)
+        } else {
+            return Err(error::Error::MissingConfig(
+                "SEARCH_API_CLIENT_KEY".to_string(),
+            ));
+        }
+    } else {
+        client_builder
+    };
+
+    let api_client = client_builder.build().await?;
+
+    let index = IndexState::new(Index::new()?);
+
+    let index_handler = IndexStateHandler::new(
+        index.clone(),
+        api_client.clone(),
+        app_config.update_interval,
     );
 
-    let (index, status) =
-        match Search::new_state(client.clone().build().unwrap(), update_interval).await {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("Error while creating index: {}", e);
-                process::exit(2);
-            }
-        };
+    let status = index_handler.status_ref();
 
-    let server = HttpServer::new(move || {
-        let client = Mutex::new(client.clone().build().unwrap());
+    let shutdown_signal = get_shutdown_signal(2);
 
-        App::new()
-            .app_data(
-                web::QueryConfig::default()
-                    .error_handler(|err, _| StatusResponse::from(err).into()),
-            )
-            .app_data(
-                web::JsonConfig::default().error_handler(|err, _| StatusResponse::from(err).into()),
-            )
-            .app_data(auth_config.clone())
-            .service(
-                web::resource("/search")
-                    .app_data(index.clone())
-                    .wrap(Authentication::with_scope(Scope::Search))
-                    .default_service(web::route().to(HttpResponse::MethodNotAllowed))
-                    .route(web::get().to(Search::get_handler)),
-            )
-            .service(
-                web::scope("/token")
-                    .app_data(client)
-                    .default_service(web::route().to(HttpResponse::MethodNotAllowed))
-                    .service(
-                        web::resource("")
-                            .guard(guard::Get())
-                            .to(Authentication::get_handler),
-                    )
-                    .service(
-                        web::resource("")
-                            .guard(guard::Post())
-                            .wrap(Authentication::with_scope(Scope::Token))
-                            .to(Authentication::post_handler),
-                    ),
-            )
-            .service(
-                web::resource("/health")
-                    .app_data(status.clone())
-                    .wrap(Authentication::new())
-                    .default_service(web::route().to(HttpResponse::MethodNotAllowed))
-                    .route(web::get().to(Health::get_handler)),
-            )
+    let signal = shutdown_signal.subscribe();
+    let index_handler = tokio::spawn(async move {
+        index_handler.run(signal).await.unwrap();
     });
 
-    server.bind(bind)?.run().await
+    let middleware = ServiceBuilder::new()
+        .layer(HandleErrorLayer::new(error::handle_error))
+        .load_shed()
+        .concurrency_limit(1024)
+        .timeout(Duration::from_secs(60))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().include_headers(true))
+                .on_response(
+                    DefaultOnResponse::new()
+                        .include_headers(true)
+                        .latency_unit(LatencyUnit::Micros),
+                ),
+        )
+        .layer(AddExtensionLayer::new(token_config))
+        .layer(AddExtensionLayer::new(api_client))
+        .layer(AddExtensionLayer::new(index))
+        .layer(AddExtensionLayer::new(status))
+        .layer(SetSensitiveHeadersLayer::new(once(AUTHORIZATION)));
+
+    let svc_routes = Router::new()
+        .nest("/search", search::routes())
+        .nest("/token", token::routes())
+        .nest("/health", health::routes());
+
+    let routes = svc_routes.layer(middleware.into_inner());
+
+    let addr = SocketAddr::from((app_config.server_addr, app_config.server_port));
+    tracing::debug!("listening on {}", addr);
+    let server = Server::bind(&addr).serve(routes.into_make_service());
+
+    let mut signal = shutdown_signal.subscribe();
+    let graceful_server = server.with_graceful_shutdown(async move {
+        signal.recv().await.ok();
+    });
+
+    graceful_server.await?;
+    index_handler.await?;
+
+    Ok(())
+}
+
+fn get_shutdown_signal(rx_count: usize) -> Sender<()> {
+    let (tx, _) = broadcast::channel(rx_count);
+
+    let tx2 = tx.clone();
+
+    tokio::spawn(async move {
+        let mut sig_int = signal(SignalKind::interrupt()).unwrap();
+        let mut sig_term = signal(SignalKind::terminate()).unwrap();
+
+        tokio::select! {
+            _ = sig_int.recv() => {},
+            _ = sig_term.recv() => {},
+        };
+
+        tx.send(()).unwrap();
+    });
+
+    tx2
 }
