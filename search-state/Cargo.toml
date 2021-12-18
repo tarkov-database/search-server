@@ -1,6 +1,6 @@
 [package]
 name = "search-state"
-version = "0.2.0-alpha.0"
+version = "0.3.0-alpha.0"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
 rust-version = "1.57"

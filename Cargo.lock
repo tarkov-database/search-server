@@ -1421,7 +1421,7 @@ dependencies = [
 
 [[package]]
 name = "search-index"
-version = "0.1.0-alpha.7"
+version = "0.2.0-alpha.0"
 dependencies = [
  "serde",
  "tantivy",
@@ -1431,7 +1431,7 @@ dependencies = [
 
 [[package]]
 name = "search-rest"
-version = "0.1.0-alpha.15"
+version = "0.2.0-alpha.0"
 dependencies = [
  "axum",
  "chrono",
@@ -1458,7 +1458,7 @@ dependencies = [
 
 [[package]]
 name = "search-state"
-version = "0.2.0-alpha.0"
+version = "0.3.0-alpha.0"
 dependencies = [
  "chrono",
  "search-index",
