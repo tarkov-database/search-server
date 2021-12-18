@@ -67,6 +67,7 @@ pub struct QueryOptions {
     pub conjunction: bool,
 }
 
+#[derive(Clone)]
 pub struct Index {
     index: TantivyIndex,
     reader: IndexReader,
