@@ -99,6 +99,7 @@ async fn main() -> Result<()> {
     let client_builder = ClientBuilder::default()
         .set_origin(&app_config.api_origin)
         .set_token(&app_config.api_token)
+        .set_trust_dns(false)
         .set_user_agent(USER_AGENT);
 
     let client_builder = if let Some(v) = app_config.api_client_ca {
