@@ -16,7 +16,7 @@ jemalloc = ["jemallocator"]
 search-index = { path = "../search-index" }
 search-state = { path = "../search-state" }
 
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.2" }
+tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.3" }
 
 jemallocator = { version = "0.3", optional = true }
 tokio = { version = "1", features = ["full"] }
