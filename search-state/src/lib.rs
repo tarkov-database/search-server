@@ -81,10 +81,7 @@ impl IndexStateHandler {
     async fn update_state(&mut self) {
         if !self.client.token_is_valid().await {
             if let Err(e) = self.client.refresh_token().await {
-                error!(
-                    "Couldn't update index: error while refreshing API token: {}",
-                    e
-                );
+                error!(error = %e, "Couldn't update index: error while refreshing API token");
                 self.status.set_client_error(true);
                 return;
             }
@@ -93,10 +90,7 @@ impl IndexStateHandler {
         let stats = match self.client.get_item_index().await {
             Ok(i) => i,
             Err(e) => {
-                error!(
-                    "Couldn't update index: error while getting item index: {}",
-                    e
-                );
+                error!(error = %e, "Couldn't update index: error while getting index");
                 self.status.set_client_error(true);
                 return;
             }
@@ -108,26 +102,20 @@ impl IndexStateHandler {
             let items = match self.client.get_items_all().await {
                 Ok(d) => d,
                 Err(e) => {
-                    error!(
-                        "Couldn't update index: error while getting items from API: {}",
-                        e
-                    );
+                    error!(error = %e, "Couldn't update index: error while getting items from API");
                     self.status.set_client_error(true);
                     return;
                 }
             };
 
             if let Err(e) = self.state.update_items(items).await {
-                error!(
-                    "Couldn't update index: error while writing item index: {}",
-                    e
-                );
+                error!(error = %e, "Couldn't update index: error while writing item index");
                 self.status.set_index_error(true);
                 return;
             }
 
             if let Err(e) = self.state.index.check_health() {
-                error!("Error while checking index health: {}", e);
+                error!(error = %e, "Error while checking index health");
                 self.status.set_index_error(true);
                 return;
             }
@@ -141,8 +129,8 @@ impl IndexStateHandler {
         let mut interval = tokio::time::interval(self.interval);
 
         tracing::debug!(
-            "watching for changes every {}s",
-            self.interval.as_secs_f64()
+            interval_secs = ?self.interval.as_secs_f64(),
+            "watching for changes",
         );
 
         loop {

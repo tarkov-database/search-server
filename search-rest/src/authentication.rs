@@ -62,7 +62,7 @@ impl From<JwtError> for TokenError {
             ErrorKind::ImmatureSignature => Self::Immature,
             ErrorKind::InvalidToken => Self::Invalid,
             _ => {
-                error!("{:?}", error);
+                error!(error = ?error, "JWT error");
                 Self::Invalid
             }
         }
@@ -108,7 +108,7 @@ where
     fn encode(&self, config: &TokenConfig) -> Result<String, TokenError> {
         let header = jsonwebtoken::Header::new(config.alg);
         let token = jsonwebtoken::encode(&header, self, &config.enc_key).map_err(|e| {
-            error!("Error while encoding token: {:?}", e);
+            error!(error = ?e, "Error while encoding token");
             TokenError::EncodingFailed(e)
         })?;
 

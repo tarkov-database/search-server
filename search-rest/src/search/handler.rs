@@ -64,7 +64,7 @@ pub async fn get(
             data: d,
         })),
         Err(e) => {
-            error!("Error for query \"{}\": {}", query, e);
+            error!(query = ?query, error = %e, "Query error");
             Err(SearchError::IndexError(e).into())
         }
     }

@@ -34,18 +34,18 @@ impl axum::response::IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         let res = match self {
             Error::Search(e) => e.error_response(),
+            Error::Authentiaction(e) => e.error_response(),
+            Error::Token(e) => e.error_response(),
             Error::Hyper(e) => {
-                error!("hyper error: {:?}", e);
+                error!(error = %e, "Hyper error");
                 Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
             }
-            Error::Token(e) => e.error_response(),
-            Error::Authentiaction(e) => e.error_response(),
             Error::ApiLibrary(e) => {
-                error!("api client error: {:?}", e);
+                error!(error = %e, "API client error");
                 Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
             }
             Error::Index(e) => {
-                error!("index error: {:?}", e);
+                error!(error = %e, "Index error");
                 Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
             }
             Error::Envy(_) => unreachable!(),
@@ -69,7 +69,7 @@ pub async fn handle_error(error: BoxError) -> Status {
         );
     }
 
-    error!("internal error: {:?}", error);
+    error!(error = %error, "internal error");
     Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
 }
 
