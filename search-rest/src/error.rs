@@ -38,12 +38,18 @@ impl axum::response::IntoResponse for Error {
                 error!("hyper error: {:?}", e);
                 Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
             }
+            Error::Token(e) => e.error_response(),
+            Error::Authentiaction(e) => e.error_response(),
+            Error::ApiLibrary(e) => {
+                error!("api client error: {:?}", e);
+                Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
+            }
+            Error::Index(e) => {
+                error!("index error: {:?}", e);
+                Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
+            }
             Error::Envy(_) => unreachable!(),
             Error::MissingConfig(_) => unreachable!(),
-            Error::ApiLibrary(_) => unreachable!(),
-            Error::Index(_) => unreachable!(),
-            Error::Authentiaction(e) => e.error_response(),
-            Error::Token(e) => e.error_response(),
             Error::Task(_) => unreachable!(),
         };
 
