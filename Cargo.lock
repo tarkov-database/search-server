@@ -1708,8 +1708,8 @@ dependencies = [
 
 [[package]]
 name = "tarkov-database-rs"
-version = "0.2.0-alpha.3"
-source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.2.0-alpha.3#ff6d363da7f5d0abc40aa465ffb599157548cb16"
+version = "0.2.0-alpha.4"
+source = "git+https://github.com/tarkov-database/tarkov-database-rs.git?tag=v0.2.0-alpha.4#0c60f2695ad020a10be7d7d725b0741858b97c7e"
 dependencies = [
  "chrono",
  "jsonwebtoken",
