@@ -7,7 +7,7 @@ use std::{
 };
 
 use chrono::{DateTime, TimeZone, Utc};
-use tarkov_database_rs::{client::Client, model::item::Item};
+use tarkov_database_rs::{client::Client, model::item::common::Item};
 use thiserror::Error;
 use tokio::sync::{broadcast::Receiver, RwLock};
 use tracing::{error, info};

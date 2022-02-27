@@ -11,7 +11,7 @@ use tantivy::{
     collector::TopDocs, query::QueryParser, schema::Schema, tokenizer::Language, Document,
     Index as TantivyIndex, IndexReader, ReloadPolicy,
 };
-use tarkov_database_rs::model::item::Item;
+use tarkov_database_rs::model::item::common::Item;
 
 const WRITE_BUFFER: usize = 50_000_000;
 

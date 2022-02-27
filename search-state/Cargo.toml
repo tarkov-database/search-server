@@ -1,6 +1,6 @@
 [package]
 name = "search-state"
-version = "0.3.0-alpha.1"
+version = "0.3.0-alpha.2"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
 rust-version = "1.57"
@@ -10,7 +10,7 @@ rust-version = "1.57"
 [dependencies]
 search-index = { path = "../search-index" }
 
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.4" }
+tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.6" }
 
 tokio = { version = "1", features = [
     "sync",

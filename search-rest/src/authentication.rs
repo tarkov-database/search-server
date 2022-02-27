@@ -92,10 +92,10 @@ where
 {
     fn decode(token: &str, config: &TokenConfig, validate_exp: bool) -> Result<Self, TokenError> {
         let validation = if !validate_exp {
-            Validation {
-                validate_exp,
-                ..config.validation.clone()
-            }
+            let mut v = config.validation.clone();
+            v.validate_exp = validate_exp;
+
+            v
         } else {
             config.validation.clone()
         };
@@ -116,11 +116,11 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TokenConfig {
     pub alg: Algorithm,
     pub enc_key: EncodingKey,
-    pub dec_key: DecodingKey<'static>,
+    pub dec_key: DecodingKey,
     pub validation: Validation,
 }
 
@@ -133,16 +133,14 @@ impl TokenConfig {
         A: AsRef<[T]>,
         T: ToString,
     {
-        let mut validation = Validation {
-            leeway: Self::LEEWAY,
-            ..Validation::default()
-        };
+        let mut validation = Validation::default();
+        validation.leeway = Self::LEEWAY;
         validation.set_audience(audience.as_ref());
 
         Self {
             alg: Algorithm::HS256,
             enc_key: EncodingKey::from_secret(secret.as_ref()),
-            dec_key: DecodingKey::from_secret(secret.as_ref()).into_static(),
+            dec_key: DecodingKey::from_secret(secret.as_ref()),
             validation,
         }
     }
