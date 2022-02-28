@@ -161,14 +161,27 @@ impl Index {
         &self,
         query: &str,
         r#type: DocType,
-        kind: Option<&str>,
+        kind: Option<&[&str]>,
         opts: QueryOptions,
     ) -> Result<Vec<IndexDoc>> {
         let mut q = format!("type:{}", r#type);
 
         if r#type == DocType::Item {
             if let Some(k) = kind {
-                q = format!("{} AND kind:{}", q, k);
+                let len = k.len();
+                let k = k
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| {
+                        if i == len - 1 {
+                            format!("kind:{}", v)
+                        } else {
+                            format!("kind:{} OR ", v)
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .concat();
+                q = format!("{} AND ({})", q, k);
             }
         }
 
@@ -176,6 +189,7 @@ impl Index {
     }
 
     pub fn query_top(&self, query: &str, opts: QueryOptions) -> Result<Vec<IndexDoc>> {
+        dbg!(&query);
         let id_field = self.schema.get_field(IndexField::ID.name()).unwrap();
         let name_field = self.schema.get_field(IndexField::Name.name()).unwrap();
         let desc_field = self

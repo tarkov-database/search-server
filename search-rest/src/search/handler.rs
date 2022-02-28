@@ -52,10 +52,12 @@ pub async fn get(
         _ => {}
     }
 
+    let kinds = opts.kind.as_ref().map(|v| v.split(',').collect::<Vec<_>>());
+
     let index = state.get_index();
 
     match if let Some(t) = opts.r#type {
-        index.search_by_type(query, t, opts.kind.as_deref(), options)
+        index.search_by_type(query, t, kinds.as_deref(), options)
     } else {
         index.query_top(query, options)
     } {
