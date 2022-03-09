@@ -10,6 +10,6 @@ rust-version = "1.57"
 [dependencies]
 tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.6" }
 
-tantivy = "0.16"
+tantivy = "0.17"
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"
