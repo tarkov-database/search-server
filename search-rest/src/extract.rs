@@ -61,7 +61,10 @@ where
             Ok(value) => Ok(Self(value.0)),
             Err(rejection) => {
                 let (status, message): (_, Cow<'_, str>) = match rejection {
-                    JsonRejection::InvalidJsonBody(err) => {
+                    JsonRejection::JsonDataError(err) => {
+                        (StatusCode::BAD_REQUEST, err.to_string().into())
+                    }
+                    JsonRejection::JsonSyntaxError(err) => {
                         (StatusCode::BAD_REQUEST, err.to_string().into())
                     }
                     JsonRejection::MissingJsonContentType(err) => {

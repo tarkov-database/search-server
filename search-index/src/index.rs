@@ -136,7 +136,7 @@ impl Index {
                 DocType::Item.to_string(),
             );
 
-            writer.add_document(doc);
+            writer.add_document(doc)?;
         }
 
         writer.commit()?;
@@ -222,35 +222,40 @@ impl Index {
             let doc = searcher.doc(addr)?;
             let mut names = doc.get_all(name_field);
             let mut item = IndexDoc {
-                id: doc.get_first(id_field).unwrap().text().unwrap().to_string(),
+                id: doc
+                    .get_first(id_field)
+                    .unwrap()
+                    .as_text()
+                    .unwrap()
+                    .to_string(),
                 short_name: None,
                 name: String::new(),
                 description: doc
                     .get_first(desc_field)
                     .unwrap()
-                    .text()
+                    .as_text()
                     .unwrap_or_default()
                     .to_string(),
                 kind: None,
                 r#type: DocType::from_str(
                     doc.get_first(type_field)
                         .unwrap()
-                        .text()
+                        .as_text()
                         .unwrap_or_default(),
                 )
                 .unwrap(),
             };
 
             if item.r#type == DocType::Item {
-                item.short_name = Some(names.next().unwrap().text().unwrap().to_string());
+                item.short_name = Some(names.next().unwrap().as_text().unwrap().to_string());
             }
 
-            item.name.push_str(names.next().unwrap().text().unwrap());
+            item.name.push_str(names.next().unwrap().as_text().unwrap());
 
             item.kind = doc
                 .get_first(kind_field)
                 .unwrap()
-                .text()
+                .as_text()
                 .map(|s| s.to_string());
 
             result.push(item);
