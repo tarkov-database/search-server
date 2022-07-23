@@ -31,7 +31,7 @@ jobs:
           components: clippy, rustfmt
           override: true
 
-    - uses: actions/cache@v3.0.1
+    - uses: actions/cache@v3.0.5
       env:
         cache-name: lint
       with:
@@ -70,7 +70,7 @@ jobs:
           toolchain: stable
           override: true
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v3.0.5
       env:
         cache-name: test
       with:
