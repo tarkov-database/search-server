@@ -189,7 +189,6 @@ impl Index {
     }
 
     pub fn query_top(&self, query: &str, opts: QueryOptions) -> Result<Vec<IndexDoc>> {
-        dbg!(&query);
         let id_field = self.schema.get_field(IndexField::ID.name()).unwrap();
         let name_field = self.schema.get_field(IndexField::Name.name()).unwrap();
         let desc_field = self
