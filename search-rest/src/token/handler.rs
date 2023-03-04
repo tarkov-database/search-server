@@ -1,6 +1,6 @@
 use crate::{
     authentication::{AuthenticationError, TokenClaims, TokenConfig},
-    extract::{SizedJson, TokenData},
+    extract::{Json, TokenData},
     model::Response,
 };
 
@@ -8,7 +8,7 @@ use super::{Claims, Scope};
 
 use std::time;
 
-use axum::extract::Extension;
+use axum::extract::State;
 use chrono::{serde::ts_seconds, DateTime, Duration, Utc};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -24,8 +24,8 @@ pub struct TokenResponse {
 
 pub async fn get(
     TokenData(mut claims): TokenData<Claims, false>,
-    Extension(mut client): Extension<Client>,
-    Extension(config): Extension<TokenConfig>,
+    State(mut client): State<Client>,
+    State(config): State<TokenConfig>,
 ) -> crate::Result<Response<TokenResponse>> {
     let user = get_user(&claims.sub, &mut client).await?;
 
@@ -57,9 +57,9 @@ pub struct CreateRequest {
 
 pub async fn create(
     TokenData(_claims): TokenData<Claims, true>,
-    SizedJson(body): SizedJson<CreateRequest>,
-    Extension(mut client): Extension<Client>,
-    Extension(config): Extension<TokenConfig>,
+    State(mut client): State<Client>,
+    State(config): State<TokenConfig>,
+    Json(body): Json<CreateRequest>,
 ) -> crate::Result<Response<TokenResponse>> {
     let user = get_user(&body.sub, &mut client).await?;
 

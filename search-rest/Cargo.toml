@@ -3,7 +3,7 @@ name = "search-rest"
 version = "0.2.0-alpha.5"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
-rust-version = "1.62"
+rust-version = "1.67"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,10 +16,10 @@ jemalloc = ["jemallocator"]
 search-index = { path = "../search-index" }
 search-state = { path = "../search-state" }
 
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.6" }
+tarkov-database-rs = { workspace = true }
 
 jemallocator = { version = "0.5", optional = true }
-tokio = { version = "1", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 hyper = { version = "0.14", features = ["http1", "server", "runtime"] }
 tower = { version = "0.4", features = [
     "util",
@@ -27,21 +27,29 @@ tower = { version = "0.4", features = [
     "load-shed",
     "limit",
 ] }
-tower-http = { version = "0.3", features = [
+tower-http = { version = "0.4", features = [
     "add-extension",
     "trace",
     "sensitive-headers",
 ] }
-axum = { version = "0.5", features = ["headers"] }
+axum = { version = "0.6.10", default-features = false, features = [
+    "json",
+    "matched-path",
+    "original-uri",
+    "query",
+    "tokio",
+    "tower-log",
+    "headers",
+] }
 headers = "0.3"
-serde = { version = "1", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 serde_json = "1"
 chrono = "0.4"
 humantime-serde = "1"
 jsonwebtoken = "8"
 envy = "0.4"
 dotenv = "0.15"
-thiserror = "1"
+thiserror = { workspace = true }
 tracing = "0.1"
 tracing-futures = { version = "0.2", features = ["futures-03"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

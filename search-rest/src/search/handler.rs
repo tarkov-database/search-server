@@ -6,7 +6,7 @@ use crate::{
 
 use super::SearchError;
 
-use axum::extract::Extension;
+use axum::extract::State;
 use search_index::{DocType, IndexDoc, QueryOptions};
 use search_state::IndexState;
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ pub struct SearchResult {
 pub async fn get(
     TokenData(_claims): TokenData<Claims, true>,
     Query(opts): Query<QueryParams>,
-    Extension(state): Extension<IndexState>,
+    State(state): State<IndexState>,
 ) -> crate::Result<Response<SearchResult>> {
     let query = &opts.query;
     let options = QueryOptions {

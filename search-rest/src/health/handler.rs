@@ -4,7 +4,7 @@ use super::{ServiceStatus, Services};
 
 use std::sync::Arc;
 
-use axum::extract::Extension;
+use axum::extract::State;
 use search_state::HandlerStatus;
 use serde::Serialize;
 
@@ -17,7 +17,7 @@ pub struct StatusResponse {
 
 pub async fn get(
     TokenData(_claims): TokenData<Claims, true>,
-    Extension(status): Extension<Arc<HandlerStatus>>,
+    State(status): State<Arc<HandlerStatus>>,
 ) -> crate::Result<Response<StatusResponse>> {
     let mut ok = true;
 

@@ -3,13 +3,13 @@ name = "search-index"
 version = "0.2.0-alpha.4"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
-rust-version = "1.62"
+rust-version = "1.67"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.6" }
+tarkov-database-rs = { workspace = true }
 
-tantivy = "0.18"
-serde = { version = "1", features = ["derive"] }
-thiserror = "1"
+tantivy = "0.19"
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }

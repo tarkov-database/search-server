@@ -13,22 +13,22 @@ use std::{
     iter::once,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
+    sync::Arc,
     time::Duration,
 };
 
-use axum::{error_handling::HandleErrorLayer, Router, Server};
+use axum::{error_handling::HandleErrorLayer, extract::FromRef, Router, Server};
 use hyper::header::AUTHORIZATION;
 use search_index::Index;
-use search_state::{IndexState, IndexStateHandler};
+use search_state::{HandlerStatus, IndexState, IndexStateHandler};
 use serde::Deserialize;
-use tarkov_database_rs::client::ClientBuilder;
+use tarkov_database_rs::client::{Client, ClientBuilder};
 use tokio::{
     signal::unix::{signal, SignalKind},
     sync::broadcast::{self, Sender},
 };
 use tower::ServiceBuilder;
 use tower_http::{
-    add_extension::AddExtensionLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
     LatencyUnit,
@@ -76,6 +76,38 @@ struct AppConfig {
     // Search
     #[serde(default = "default_interval", with = "humantime_serde")]
     update_interval: Duration,
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    index: IndexState,
+    index_status: Arc<HandlerStatus>,
+    token_config: TokenConfig,
+    api_client: Client,
+}
+
+impl FromRef<AppState> for IndexState {
+    fn from_ref(state: &AppState) -> Self {
+        state.index.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<HandlerStatus> {
+    fn from_ref(state: &AppState) -> Self {
+        state.index_status.clone()
+    }
+}
+
+impl FromRef<AppState> for TokenConfig {
+    fn from_ref(state: &AppState) -> Self {
+        state.token_config.clone()
+    }
+}
+
+impl FromRef<AppState> for Client {
+    fn from_ref(state: &AppState) -> Self {
+        state.api_client.clone()
+    }
 }
 
 #[tokio::main]
@@ -139,6 +171,13 @@ async fn main() -> Result<()> {
         index_handler.run(signal).await.unwrap();
     });
 
+    let state = AppState {
+        index,
+        index_status: status,
+        token_config,
+        api_client,
+    };
+
     let middleware = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(error::handle_error))
         .load_shed()
@@ -153,27 +192,31 @@ async fn main() -> Result<()> {
                         .include_headers(true)
                         .latency_unit(LatencyUnit::Micros),
                 ),
-        )
-        .layer(AddExtensionLayer::new(token_config))
-        .layer(AddExtensionLayer::new(api_client))
-        .layer(AddExtensionLayer::new(index))
-        .layer(AddExtensionLayer::new(status));
+        );
 
-    let svc_routes = Router::new()
+    let svc_routes: Router<()> = Router::new()
         .nest("/search", search::routes())
         .nest("/token", token::routes())
-        .nest("/health", health::routes());
+        .nest("/health", health::routes())
+        .with_state(state);
 
-    let routes = svc_routes.layer(middleware.into_inner());
+    let routes = Router::new()
+        .merge(svc_routes)
+        .layer(middleware.into_inner());
 
     let addr = SocketAddr::from((app_config.server_addr, app_config.server_port));
-    tracing::debug!("listening on {}", addr);
     let server = Server::bind(&addr).serve(routes.into_make_service());
 
     let mut signal = shutdown_signal.subscribe();
     let graceful_server = server.with_graceful_shutdown(async move {
         signal.recv().await.ok();
     });
+
+    tracing::debug!(
+        ipAddress =? addr.ip(),
+        port =? addr.port(),
+        "HTTP(S) server started"
+    );
 
     graceful_server.await?;
     index_handler.await?;

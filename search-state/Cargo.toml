@@ -3,21 +3,17 @@ name = "search-state"
 version = "0.3.0-alpha.3"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
-rust-version = "1.62"
+rust-version = "1.67"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 search-index = { path = "../search-index" }
 
-tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.6" }
+tarkov-database-rs = { workspace = true }
 
-tokio = { version = "1", features = [
-    "sync",
-    "macros",
-    "time",
-], default-features = false }
+tokio = { workspace = true, features = ["sync", "macros", "time"] }
 chrono = "0.4"
-thiserror = "1"
+thiserror = { workspace = true }
 tracing = "0.1"
 tracing-futures = { version = "0.2", features = ["futures-03"] }

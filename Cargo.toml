@@ -1,7 +1,15 @@
 [workspace]
 members = ["search-index", "search-state", "search-rest"]
 
+[workspace.dependencies]
+tokio = { version = "1", default-features = false }
+serde = { version = "1", default-features = false }
+thiserror = "1"
+tarkov-database-rs = { git = "https://github.com/tarkov-database/tarkov-database-rs.git", tag = "v0.2.0-alpha.7" }
+
 [profile.release]
 lto = true
+panic = "abort"
 opt-level = 3
 debug = false
+strip = "debuginfo"
