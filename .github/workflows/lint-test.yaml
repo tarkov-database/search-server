@@ -7,12 +7,6 @@ on:
       - '**/Cargo.lock'
       - '**/Cargo.toml'
       - '.github/workflows/lint-test.yaml'
-    pull_request:
-      types: [opened, edited, synchronize, reopened]
-      paths:
-        - '**.rs'
-        - '**/Cargo.lock'
-        - '**/Cargo.toml'
 
 jobs:
 
@@ -24,37 +18,33 @@ jobs:
     - name: Check out
       uses: actions/checkout@v3
 
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: stable
-          components: clippy, rustfmt
-          override: true
+    - name: Setup Rust
+      run: |
+        rustup update stable
+        rustup default stable
+        rustup component add clippy rustfmt
+    - name: Get version
+      run: cargo --version --verbose
+        
+    - name: Generate lockfile
+      run: cargo generate-lockfile --verbose
 
-    - uses: actions/cache@v3.0.1
-      env:
-        cache-name: lint
+    - uses: actions/cache@v3
       with:
         path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: cargo-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          cargo-${{ env.cache-name }}
-          cargo-
-
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo
+    
+    - name: Check formatting
+      run: cargo fmt -- --check --verbose
+  
     - name: Run Clippy
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features
-
-    - name: Run Rustfmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
+      run: cargo clippy --verbose
 
   test:
     name: Test
@@ -64,26 +54,27 @@ jobs:
     - name: Check out
       uses: actions/checkout@v3
 
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: stable
-          override: true
+    - name: Setup Rust
+      run: |
+        rustup update stable
+        rustup default stable
+        rustup component add clippy rustfmt
+    - name: Get version
+      run: cargo --version --verbose
+        
+    - name: Generate lockfile
+      run: cargo generate-lockfile --verbose
 
     - uses: actions/cache@v3
-      env:
-        cache-name: test
       with:
         path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: cargo-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          cargo-${{ env.cache-name }}
-          cargo-
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo
 
     - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
+      run: cargo test --verbose
