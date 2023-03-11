@@ -18,7 +18,7 @@ use std::{
     time::Duration,
 };
 
-use axum::{error_handling::HandleErrorLayer, extract::FromRef, Router, Server};
+use axum::{error_handling::HandleErrorLayer, extract::FromRef, routing::get, Router, Server};
 use hyper::{header::AUTHORIZATION, server::conn::AddrIncoming};
 use hyper_rustls::server::{acceptor::TlsAcceptor, config::TlsConfigBuilder};
 use search_index::Index;
@@ -209,6 +209,7 @@ async fn main() -> Result<()> {
         .with_state(state);
 
     let routes = Router::new()
+        .route("/", get(|| async { env!("CARGO_PKG_VERSION") }))
         .merge(svc_routes)
         .layer(middleware.into_inner());
 
