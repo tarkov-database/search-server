@@ -10,6 +10,7 @@ use crate::authentication::TokenConfig;
 
 use std::{
     env,
+    fs::read,
     iter::once,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -18,7 +19,8 @@ use std::{
 };
 
 use axum::{error_handling::HandleErrorLayer, extract::FromRef, Router, Server};
-use hyper::header::AUTHORIZATION;
+use hyper::{header::AUTHORIZATION, server::conn::AddrIncoming};
+use hyper_rustls::server::{acceptor::TlsAcceptor, config::TlsConfigBuilder};
 use search_index::Index;
 use search_state::{HandlerStatus, IndexState, IndexStateHandler};
 use serde::Deserialize;
@@ -61,6 +63,10 @@ struct AppConfig {
     server_addr: IpAddr,
     #[serde(default = "default_port")]
     server_port: u16,
+    #[serde(default)]
+    server_tls: bool,
+    server_tls_cert: Option<PathBuf>,
+    server_tls_key: Option<PathBuf>,
 
     // JWT
     jwt_secret: String,
@@ -128,31 +134,33 @@ async fn main() -> Result<()> {
     let token_config =
         TokenConfig::from_secret(app_config.jwt_secret.as_bytes(), app_config.jwt_audience);
 
-    let client_builder = ClientBuilder::default()
-        .set_origin(&app_config.api_origin)
-        .set_token(&app_config.api_token)
-        .set_trust_dns(false)
-        .set_user_agent(USER_AGENT);
+    let api_client = {
+        let builder = ClientBuilder::default()
+            .set_origin(&app_config.api_origin)
+            .set_token(&app_config.api_token)
+            .set_trust_dns(false)
+            .set_user_agent(USER_AGENT);
 
-    let client_builder = if let Some(v) = app_config.api_client_ca {
-        client_builder.set_ca(v)
-    } else {
-        client_builder
-    };
-
-    let client_builder = if let Some(cert) = app_config.api_client_cert {
-        if let Some(key) = app_config.api_client_key {
-            client_builder.set_keypair(cert, key)
+        let builder = if let Some(v) = app_config.api_client_ca {
+            builder.set_ca(v)
         } else {
-            return Err(error::Error::MissingConfig(
-                "SEARCH_API_CLIENT_KEY".to_string(),
-            ));
-        }
-    } else {
-        client_builder
-    };
+            builder
+        };
 
-    let api_client = client_builder.build().await?;
+        let builder = if let Some(cert) = app_config.api_client_cert {
+            if let Some(key) = app_config.api_client_key {
+                builder.set_keypair(cert, key)
+            } else {
+                return Err(error::Error::MissingConfig(
+                    "SEARCH_API_CLIENT_KEY".to_string(),
+                ));
+            }
+        } else {
+            builder
+        };
+
+        builder.build().await?
+    };
 
     let index = IndexState::new(Index::new()?);
 
@@ -205,20 +213,55 @@ async fn main() -> Result<()> {
         .layer(middleware.into_inner());
 
     let addr = SocketAddr::from((app_config.server_addr, app_config.server_port));
-    let server = Server::bind(&addr).serve(routes.into_make_service());
+    let incoming = AddrIncoming::bind(&addr)?;
 
     let mut signal = shutdown_signal.subscribe();
-    let graceful_server = server.with_graceful_shutdown(async move {
+    let graceful_shutdown = async move {
         signal.recv().await.ok();
-    });
+    };
 
-    tracing::debug!(
-        ipAddress =? addr.ip(),
-        port =? addr.port(),
-        "HTTP(S) server started"
-    );
+    if app_config.server_tls {
+        let cert = app_config
+            .server_tls_cert
+            .ok_or(error::Error::MissingConfig(
+                "SEARCH_SERVER_TLS_CERT".to_string(),
+            ))?;
+        let key = app_config
+            .server_tls_key
+            .ok_or(error::Error::MissingConfig(
+                "SEARCH_SERVER_TLS_KEY".to_string(),
+            ))?;
 
-    graceful_server.await?;
+        let config = TlsConfigBuilder::default()
+            .cert_key(&read(cert)?, &read(key)?)
+            .alpn_protocols(vec!["h2", "http/1.1", "http/1.0"])
+            .build()?;
+        let incoming = TlsAcceptor::new(Arc::new(config), incoming);
+        let server = Server::builder(incoming)
+            .serve(routes.into_make_service())
+            .with_graceful_shutdown(graceful_shutdown);
+
+        tracing::info!(
+            ipAddress =? addr.ip(),
+            port =? addr.port(),
+            "HTTPS server started"
+        );
+
+        server.await?;
+    } else {
+        let server = Server::builder(incoming)
+            .serve(routes.into_make_service())
+            .with_graceful_shutdown(graceful_shutdown);
+
+        tracing::info!(
+            ipAddress =? addr.ip(),
+            port =? addr.port(),
+            "HTTP server started"
+        );
+
+        server.await?;
+    }
+
     index_handler.await?;
 
     Ok(())

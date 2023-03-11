@@ -5,6 +5,7 @@ use crate::{
 };
 
 use hyper::StatusCode;
+use hyper_rustls::server::config::TlsConfigError;
 use tower::BoxError;
 use tracing::error;
 
@@ -26,8 +27,12 @@ pub enum Error {
     Envy(#[from] envy::Error),
     #[error("hyper error: {0}")]
     Hyper(#[from] hyper::Error),
+    #[error("tls config error: {0}")]
+    TlsConfig(#[from] TlsConfigError),
     #[error("task error: {0}")]
     Task(#[from] tokio::task::JoinError),
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 impl axum::response::IntoResponse for Error {
@@ -51,6 +56,8 @@ impl axum::response::IntoResponse for Error {
             Error::Envy(_) => unreachable!(),
             Error::MissingConfig(_) => unreachable!(),
             Error::Task(_) => unreachable!(),
+            Error::TlsConfig(_) => unreachable!(),
+            Error::Io(_) => unreachable!(),
         };
 
         res.into_response()
