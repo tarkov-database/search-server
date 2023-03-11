@@ -54,7 +54,7 @@ jobs:
           location: '${{ secrets.GC_GKE_CLUSTER_LOCATION }}'
 
       - name: Deploy image
-        run: kubectl -n ${NAMESPACE} set image deployment/${DEPLOYMENT} ${CONTAINER}=ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF#refs/tags/v}
+        run: kubectl -n ${NAMESPACE} set image deployment/${DEPLOYMENT} ${CONTAINER}=ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF#refs/tags/rest-v}
 
       - name: Check rollout
         if: success()
