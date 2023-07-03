@@ -40,15 +40,17 @@ impl Tokenizer {
 
         match self {
             Tokenizer::Ngram(opts) => {
-                TextAnalyzer::from(NgramTokenizer::new(opts.min, opts.max, opts.prefix))
+                TextAnalyzer::builder(NgramTokenizer::new(opts.min, opts.max, opts.prefix))
                     .filter(LowerCaser)
                     .filter(stop_words)
+                    .build()
             }
-            Tokenizer::Custom(lang) => TextAnalyzer::from(SimpleTokenizer)
+            Tokenizer::Custom(lang) => TextAnalyzer::builder(SimpleTokenizer::default())
                 .filter(RemoveLongFilter::limit(40))
                 .filter(LowerCaser)
                 .filter(stop_words)
-                .filter(Stemmer::new(lang.to_owned())),
+                .filter(Stemmer::new(lang.to_owned()))
+                .build(),
         }
     }
 

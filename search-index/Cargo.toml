@@ -10,6 +10,6 @@ rust-version = "1.68"
 [dependencies]
 tarkov-database-rs = { workspace = true }
 
-tantivy = "0.19"
+tantivy = "0.20"
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
