@@ -11,6 +11,7 @@ use crate::authentication::TokenConfig;
 use std::{
     env,
     fs::read,
+    io::{stdout, IsTerminal},
     iter::once,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -58,6 +59,10 @@ const fn default_interval() -> Duration {
 
 #[derive(Debug, Deserialize)]
 struct AppConfig {
+    // Logging
+    #[serde(default)]
+    log_format: LogFormat,
+
     // HTTP server
     #[serde(default = "default_addr")]
     server_addr: IpAddr,
@@ -82,6 +87,16 @@ struct AppConfig {
     // Search
     #[serde(default = "default_interval", with = "humantime_serde")]
     update_interval: Duration,
+}
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+enum LogFormat {
+    Json,
+    Pretty,
+    Compact,
+    #[default]
+    Full,
 }
 
 #[derive(Clone)]
@@ -118,10 +133,9 @@ impl FromRef<AppState> for Client {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "info");
-    }
-    tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::fmt()
+        .with_ansi(stdout().is_terminal())
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env());
 
     let prefix = envy::prefixed("SEARCH_");
 
@@ -129,6 +143,13 @@ async fn main() -> Result<()> {
         prefix.from_iter(dotenv::vars())?
     } else {
         prefix.from_env()?
+    };
+
+    match app_config.log_format {
+        LogFormat::Json => subscriber.json().init(),
+        LogFormat::Pretty => subscriber.pretty().init(),
+        LogFormat::Compact => subscriber.compact().init(),
+        LogFormat::Full => subscriber.init(),
     };
 
     let token_config =
