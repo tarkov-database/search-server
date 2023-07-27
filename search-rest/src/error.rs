@@ -5,14 +5,13 @@ use crate::{
 };
 
 use hyper::StatusCode;
-use hyper_rustls::server::config::TlsConfigError;
 use tower::BoxError;
 use tracing::error;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("missing config variable: {0}")]
-    MissingConfig(String),
+    MissingConfigVar(&'static str),
     #[error("search index error: {0}")]
     Index(#[from] search_index::Error),
     #[error("search error: {0}")]
@@ -27,8 +26,8 @@ pub enum Error {
     Envy(#[from] envy::Error),
     #[error("hyper error: {0}")]
     Hyper(#[from] hyper::Error),
-    #[error("tls config error: {0}")]
-    TlsConfig(#[from] TlsConfigError),
+    #[error("rustls error: {0}")]
+    TlsConfig(#[from] rustls::Error),
     #[error("task error: {0}")]
     Task(#[from] tokio::task::JoinError),
     #[error("io error: {0}")]
@@ -54,7 +53,7 @@ impl axum::response::IntoResponse for Error {
                 Status::new(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
             }
             Error::Envy(_) => unreachable!(),
-            Error::MissingConfig(_) => unreachable!(),
+            Error::MissingConfigVar(_) => unreachable!(),
             Error::Task(_) => unreachable!(),
             Error::TlsConfig(_) => unreachable!(),
             Error::Io(_) => unreachable!(),

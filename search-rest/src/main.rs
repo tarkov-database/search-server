@@ -5,12 +5,12 @@ mod health;
 mod model;
 mod search;
 mod token;
+mod utils;
 
-use crate::authentication::TokenConfig;
+use crate::{authentication::TokenConfig, error::Error};
 
 use std::{
     env,
-    fs::read,
     io::{stdout, IsTerminal},
     iter::once,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -21,7 +21,7 @@ use std::{
 
 use axum::{error_handling::HandleErrorLayer, extract::FromRef, routing::get, Router, Server};
 use hyper::{header::AUTHORIZATION, server::conn::AddrIncoming};
-use hyper_rustls::server::{acceptor::TlsAcceptor, config::TlsConfigBuilder};
+use hyper_rustls::server::TlsAcceptor;
 use search_index::Index;
 use search_state::{HandlerStatus, IndexState, IndexStateHandler};
 use serde::Deserialize;
@@ -172,9 +172,7 @@ async fn main() -> Result<()> {
             if let Some(key) = app_config.api_client_key {
                 builder.set_keypair(cert, key)
             } else {
-                return Err(error::Error::MissingConfig(
-                    "SEARCH_API_CLIENT_KEY".to_string(),
-                ));
+                return Err(error::Error::MissingConfigVar("SEARCH_API_CLIENT_KEY"));
             }
         } else {
             builder
@@ -243,22 +241,28 @@ async fn main() -> Result<()> {
     };
 
     if app_config.server_tls {
-        let cert = app_config
-            .server_tls_cert
-            .ok_or(error::Error::MissingConfig(
-                "SEARCH_SERVER_TLS_CERT".to_string(),
-            ))?;
-        let key = app_config
-            .server_tls_key
-            .ok_or(error::Error::MissingConfig(
-                "SEARCH_SERVER_TLS_KEY".to_string(),
-            ))?;
+        let certs = {
+            let path = app_config
+                .server_tls_cert
+                .ok_or(Error::MissingConfigVar("IDENTITY_SERVER_TLS_CERT"))?;
+            let file = std::fs::read(path)?;
+            utils::read_certs(&file[..])?
+                .into_iter()
+                .map(rustls::Certificate)
+                .collect()
+        };
+        let key = {
+            let path = app_config
+                .server_tls_key
+                .ok_or(Error::MissingConfigVar("IDENTITY_SERVER_TLS_KEY"))?;
+            let file = std::fs::read(path)?;
+            utils::read_key(&file[..]).map(rustls::PrivateKey)?
+        };
 
-        let config = TlsConfigBuilder::default()
-            .cert_key(&read(cert)?, &read(key)?)
-            .alpn_protocols(vec!["h2", "http/1.1", "http/1.0"])
-            .build()?;
-        let incoming = TlsAcceptor::new(Arc::new(config), incoming);
+        let incoming = TlsAcceptor::builder()
+            .with_single_cert(certs, key)?
+            .with_all_versions_alpn()
+            .with_incoming(incoming);
         let server = Server::builder(incoming)
             .serve(routes.into_make_service())
             .with_graceful_shutdown(graceful_shutdown);
