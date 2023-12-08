@@ -1,6 +1,6 @@
 [package]
 name = "search-index"
-version = "0.3.0-alpha.1"
+version = "0.3.0-alpha.2"
 authors = ["Markus Wiegand <mail@morphy2k.dev>"]
 edition = "2021"
 rust-version = "1.70"
@@ -10,6 +10,6 @@ rust-version = "1.70"
 [dependencies]
 tarkov-database-rs = { workspace = true }
 
-tantivy = "0.20"
+tantivy = "0.21"
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }

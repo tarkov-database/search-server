@@ -90,10 +90,10 @@ impl Index {
             .try_into()?;
 
         let custom = Tokenizer::Custom(lang);
-        custom.register_for(&index);
+        custom.register_for(&index)?;
 
         let ngram = Tokenizer::Ngram(NgramOptions::default().set_language(lang));
-        ngram.register_for(&index);
+        ngram.register_for(&index)?;
 
         Ok(Self {
             index,

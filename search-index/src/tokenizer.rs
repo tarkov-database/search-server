@@ -3,7 +3,7 @@ use tantivy::{
         Language, LowerCaser, NgramTokenizer, RemoveLongFilter, SimpleTokenizer, Stemmer,
         StopWordFilter, TextAnalyzer,
     },
-    Index,
+    Index, TantivyError,
 };
 
 const STOP_WORDS_OEC: [&str; 100] = [
@@ -31,16 +31,20 @@ impl Tokenizer {
         }
     }
 
-    pub(crate) fn register_for(self, index: &Index) {
-        index.tokenizers().register(self.name(), self.to_analyzer());
+    pub(crate) fn register_for(self, index: &Index) -> Result<(), TantivyError> {
+        index
+            .tokenizers()
+            .register(self.name(), self.to_analyzer()?);
+
+        Ok(())
     }
 
-    pub(crate) fn to_analyzer(&self) -> TextAnalyzer {
+    pub(crate) fn to_analyzer(&self) -> Result<TextAnalyzer, TantivyError> {
         let stop_words = self.stop_words();
 
-        match self {
+        let analyzer = match self {
             Tokenizer::Ngram(opts) => {
-                TextAnalyzer::builder(NgramTokenizer::new(opts.min, opts.max, opts.prefix))
+                TextAnalyzer::builder(NgramTokenizer::new(opts.min, opts.max, opts.prefix)?)
                     .filter(LowerCaser)
                     .filter(stop_words)
                     .build()
@@ -51,7 +55,9 @@ impl Tokenizer {
                 .filter(stop_words)
                 .filter(Stemmer::new(lang.to_owned()))
                 .build(),
-        }
+        };
+
+        Ok(analyzer)
     }
 
     fn stop_words(&self) -> StopWordFilter {
